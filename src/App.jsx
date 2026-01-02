@@ -144,11 +144,16 @@ function LoadingSpinner() {
 
 // Login Page
 function LoginPage() {
-  const { signIn, error } = useAuth();
+  const { signIn, error, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [localError, setLocalError] = useState('');
+
+  // Rediriger si déjà connecté
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -156,6 +161,7 @@ function LoginPage() {
     setLocalError('');
     try {
       await signIn(email, password);
+      // La redirection se fera automatiquement via le check isAuthenticated
     } catch (err) {
       setLocalError(err.message);
     } finally {
