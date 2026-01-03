@@ -62,26 +62,21 @@ export const BudgetAPI = {
 // ==================== OBJECTIVES ====================
 export const ObjectiveAPI = {
   getAll: (companyId) => api.get(`/objectives/${companyId}`),
+  getOne: (companyId, id) => api.get(`/objectives/${companyId}/${id}`),
   create: (data) => api.post('/objectives', data),
   update: (id, data) => api.put(`/objectives/${id}`, data),
+  delete: (id) => api.delete(`/objectives/${id}`),
+  
+  // Étapes
   addStep: (objectiveId, data) => api.post(`/objectives/${objectiveId}/steps`, data),
+  updateStep: (objectiveId, stepId, data) => api.put(`/objectives/${objectiveId}/steps/${stepId}`, data),
   updateStepStatus: (objectiveId, stepId, status) => 
     api.put(`/objectives/${objectiveId}/steps/${stepId}/status`, { status }),
-  submitReport: (objectiveId, stepId, data) => {
-    const formData = new FormData();
-    formData.append('content', data.content);
-    if (data.file) {
-      formData.append('file', data.file);
-    }
-    if (data.companyId) {
-      formData.append('companyId', data.companyId);
-    }
-    return api.post(`/objectives/${objectiveId}/steps/${stepId}/report`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-  },
-  validateStep: (objectiveId, stepId) => 
-    api.put(`/objectives/${objectiveId}/steps/${stepId}/validate`)
+  deleteStep: (objectiveId, stepId) => api.delete(`/objectives/${objectiveId}/steps/${stepId}`),
+  
+  // Compte-rendus
+  addReport: (objectiveId, stepId, content, newStatus) => 
+    api.post(`/objectives/${objectiveId}/steps/${stepId}/report`, { content, newStatus })
 };
 
 // ==================== USERS ====================
