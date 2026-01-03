@@ -34,16 +34,16 @@ const Icons = {
 // ==================== COMPANIES CONFIG ====================
 const COMPANIES = {
   abayili_invest: { id: 'abayili_invest', name: 'Abayili Investissement', shortName: 'AI', description: 'Société de Capital-Risque', icon: 'Building2',
-    revenueCategories: [{ id: 'commissions', name: 'Commissions', icon: '💰' }, { id: 'dividendes', name: 'Dividendes', icon: '📈' }, { id: 'trading', name: 'Trading Algorithmique', icon: '🤖' }, { id: 'paris_sportifs', name: 'Paris Sportifs (RPP)', icon: '⚽' }, { id: 'crypto', name: 'Stratégies Crypto (RSC)', icon: '₿' }],
-    expenseCategories: [{ id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
+    revenueCategories: [{ id: 'commissions', name: 'Commissions', icon: '💰' }, { id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
+    expenseCategories: [{ id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
   },
   abayili_consulting: { id: 'abayili_consulting', name: 'Abayili Consulting', shortName: 'AC', description: 'Consulting, Formation & Conférences', icon: 'GraduationCap',
-    revenueCategories: [{ id: 'formations', name: 'Ventes de Formations', icon: '📚' }, { id: 'consulting', name: 'Missions Consulting', icon: '💼' }, { id: 'conferences', name: 'Conférences', icon: '🎤' }],
-    expenseCategories: [{ id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }]
+    revenueCategories: [{ id: 'formations', name: 'Ventes de Formations', icon: '📚' }, { id: 'consulting', name: 'Missions Consulting', icon: '💼' }, { id: 'conferences', name: 'Conférences', icon: '🎤' }, { id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
+    expenseCategories: [{ id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
   },
   ai_for_afrika: { id: 'ai_for_afrika', name: 'AI for Afrika', shortName: 'AFA', description: 'Intelligence Artificielle & Développement', icon: 'Brain',
     revenueCategories: [{ id: 'contrats_dev', name: 'Contrats de Développement', icon: '💻' }, { id: 'licences', name: 'Licences Logicielles', icon: '📜' }, { id: 'maintenance', name: 'Maintenance & Support', icon: '🔧' }],
-    expenseCategories: [{ id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }]
+    expenseCategories: [{ id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
   }
 };
 
@@ -54,28 +54,144 @@ const STEP_STATUSES = [
   { id: 'done', label: 'Terminée', color: 'bg-emerald-500/10 text-emerald-400', dot: 'bg-emerald-400' }
 ];
 
+// ==================== CHART COMPONENTS ====================
+
+// Graphique en barres pour revenus/dépenses
+function BarChart({ data, height = 200 }) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-48 text-neutral-500 text-sm">
+        Aucune donnée disponible
+      </div>
+    );
+  }
+
+  const maxValue = Math.max(...data.flatMap(d => [d.revenue || 0, d.expense || 0]), 1);
+  const barWidth = 100 / data.length;
+
+  return (
+    <div className="w-full">
+      <svg viewBox={`0 0 400 ${height}`} className="w-full" preserveAspectRatio="xMidYMid meet">
+        {/* Lignes de grille */}
+        {[0, 25, 50, 75, 100].map(p => (
+          <g key={p}>
+            <line x1="40" y1={height - 30 - (p / 100) * (height - 50)} x2="390" y2={height - 30 - (p / 100) * (height - 50)} stroke="#333" strokeWidth="1" strokeDasharray="4" />
+            <text x="35" y={height - 26 - (p / 100) * (height - 50)} fill="#666" fontSize="10" textAnchor="end">
+              {((maxValue * p) / 100 / 1000).toFixed(0)}k
+            </text>
+          </g>
+        ))}
+        
+        {/* Barres */}
+        {data.map((item, i) => {
+          const x = 50 + i * (340 / data.length);
+          const barW = (340 / data.length) * 0.35;
+          const revenueH = ((item.revenue || 0) / maxValue) * (height - 50);
+          const expenseH = ((item.expense || 0) / maxValue) * (height - 50);
+          
+          return (
+            <g key={i}>
+              {/* Barre revenus */}
+              <rect x={x} y={height - 30 - revenueH} width={barW} height={revenueH} fill="#10b981" rx="2" className="transition-all duration-300 hover:opacity-80">
+                <title>Revenus: {(item.revenue || 0).toLocaleString('fr-FR')} FCFA</title>
+              </rect>
+              {/* Barre dépenses */}
+              <rect x={x + barW + 4} y={height - 30 - expenseH} width={barW} height={expenseH} fill="#ef4444" rx="2" className="transition-all duration-300 hover:opacity-80">
+                <title>Dépenses: {(item.expense || 0).toLocaleString('fr-FR')} FCFA</title>
+              </rect>
+              {/* Label mois */}
+              <text x={x + barW + 2} y={height - 10} fill="#888" fontSize="11" textAnchor="middle">{item.month}</text>
+            </g>
+          );
+        })}
+      </svg>
+      
+      {/* Légende */}
+      <div className="flex items-center justify-center gap-6 mt-2">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded bg-emerald-500"></div>
+          <span className="text-xs text-neutral-400">Revenus</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded bg-red-500"></div>
+          <span className="text-xs text-neutral-400">Dépenses</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Cercle de progression
+function CircularProgress({ value, max, size = 100, strokeWidth = 8, label, sublabel, color = '#10b981' }) {
+  const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (percentage / 100) * circumference;
+  const isOver = value > max;
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="transform -rotate-90">
+          {/* Cercle de fond */}
+          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#333" strokeWidth={strokeWidth} />
+          {/* Cercle de progression */}
+          <circle
+            cx={size / 2} cy={size / 2} r={radius} fill="none"
+            stroke={isOver ? '#ef4444' : color}
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            className="transition-all duration-500"
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className={`text-lg font-medium ${isOver ? 'text-red-400' : 'text-white'}`}>{percentage.toFixed(0)}%</span>
+        </div>
+      </div>
+      {label && <p className="text-sm text-white mt-2 text-center">{label}</p>}
+      {sublabel && <p className="text-xs text-neutral-500 text-center">{sublabel}</p>}
+    </div>
+  );
+}
+
+// Mini barre de progression horizontale
+function MiniProgressBar({ value, max, color = 'bg-emerald-500', showLabel = true }) {
+  const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  return (
+    <div className="w-full">
+      <div className="w-full bg-neutral-800 rounded-full h-2 overflow-hidden">
+        <div className={`h-full rounded-full transition-all duration-500 ${color}`} style={{ width: `${percentage}%` }} />
+      </div>
+      {showLabel && <p className="text-xs text-neutral-500 mt-1 text-right">{percentage.toFixed(0)}%</p>}
+    </div>
+  );
+}
+
 // ==================== COMPONENTS ====================
-function MetricCard({ label, value, positive, icon, warning }) {
+function MetricCard({ label, value, positive, icon, warning, trend, onClick }) {
   const IconComponent = icon ? Icons[icon] : null;
   return (
-    <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 p-6">
+    <div className={`bg-neutral-900/50 rounded-2xl border border-neutral-800/50 p-6 ${onClick ? 'cursor-pointer hover:bg-neutral-800/30 transition-colors' : ''}`} onClick={onClick}>
       <div className="flex items-start justify-between mb-3">
         <p className="text-xs text-neutral-500 uppercase tracking-wider">{label}</p>
         {IconComponent && <IconComponent size={16} className={warning ? 'text-amber-400' : 'text-neutral-500'} />}
       </div>
       <p className={`text-2xl font-light ${positive !== undefined ? (positive ? 'text-emerald-400' : 'text-red-400') : 'text-white'}`}>{value}</p>
+      {trend && <p className={`text-xs mt-2 ${trend.up ? 'text-emerald-400' : 'text-red-400'}`}>{trend.up ? '↑' : '↓'} {trend.value}</p>}
     </div>
   );
 }
 
 function EmptyState({ icon: IconComponent, title, description, action, actionLabel }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="w-16 h-16 rounded-full bg-neutral-800/50 flex items-center justify-center mb-4">
-        {IconComponent && <IconComponent size={32} className="text-neutral-500" />}
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="w-14 h-14 rounded-full bg-neutral-800/50 flex items-center justify-center mb-4">
+        {IconComponent && <IconComponent size={28} className="text-neutral-500" />}
       </div>
-      <h3 className="text-lg text-neutral-300 mb-2">{title}</h3>
-      <p className="text-neutral-500 text-sm mb-6 max-w-md">{description}</p>
+      <h3 className="text-base text-neutral-300 mb-2">{title}</h3>
+      <p className="text-neutral-500 text-sm mb-4 max-w-md">{description}</p>
       {action && <button onClick={action} className="flex items-center gap-2 px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm hover:bg-neutral-200 transition-colors"><Icons.Plus size={16} />{actionLabel}</button>}
     </div>
   );
@@ -134,10 +250,13 @@ function LoginPage() {
   );
 }
 
-// ==================== DASHBOARD PAGE ====================
+// ==================== DASHBOARD PAGE (avec graphiques) ====================
 function DashboardPage({ company, onNavigate }) {
   const [metrics, setMetrics] = useState({ totalRevenue: 0, totalExpenses: 0, netResult: 0, pendingExpenses: 0 });
   const [transactions, setTransactions] = useState([]);
+  const [budgets, setBudgets] = useState([]);
+  const [objectives, setObjectives] = useState([]);
+  const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { loadData(); }, [company.id]);
@@ -145,42 +264,221 @@ function DashboardPage({ company, onNavigate }) {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [metricsRes, transactionsRes] = await Promise.all([
+      const [metricsRes, transactionsRes, budgetsRes, objectivesRes] = await Promise.all([
         AnalyticsAPI.getMetrics(company.id).catch(() => ({ data: {} })),
-        TransactionAPI.getAll(company.id).catch(() => ({ data: [] }))
+        TransactionAPI.getAll(company.id).catch(() => ({ data: [] })),
+        BudgetAPI.getAll(company.id).catch(() => ({ data: [] })),
+        ObjectiveAPI.getAll(company.id).catch(() => ({ data: [] }))
       ]);
+      
       setMetrics(metricsRes.data || {});
       setTransactions(transactionsRes.data || []);
+      setBudgets(budgetsRes.data || []);
+      setObjectives(objectivesRes.data || []);
+      
+      // Générer les données du graphique à partir des transactions
+      const txs = transactionsRes.data || [];
+      const monthlyData = generateMonthlyChartData(txs);
+      setChartData(monthlyData);
     } catch (err) { console.error('Erreur:', err); } finally { setLoading(false); }
   };
+
+  // Générer données pour le graphique mensuel
+  const generateMonthlyChartData = (transactions) => {
+    const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+    const currentMonth = new Date().getMonth();
+    const data = [];
+    
+    // 6 derniers mois
+    for (let i = 5; i >= 0; i--) {
+      const monthIndex = (currentMonth - i + 12) % 12;
+      const monthTxs = transactions.filter(t => {
+        if (!t.date) return false;
+        const txDate = new Date(t.date);
+        return txDate.getMonth() === monthIndex && t.status === 'validated';
+      });
+      
+      const revenue = monthTxs.filter(t => t.type === 'revenue').reduce((sum, t) => sum + (t.amount || 0), 0);
+      const expense = monthTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.amount || 0), 0);
+      
+      data.push({ month: months[monthIndex], revenue, expense });
+    }
+    
+    return data;
+  };
+
+  // Calculs pour les objectifs
+  const objectivesStats = {
+    total: objectives.length,
+    completed: objectives.filter(o => o.status === 'completed').length,
+    inProgress: objectives.filter(o => o.status === 'in_progress').length,
+    todo: objectives.filter(o => o.status === 'todo').length
+  };
+  const objectivesProgress = objectivesStats.total > 0 ? (objectivesStats.completed / objectivesStats.total) * 100 : 0;
+
+  // Calculs pour les budgets
+  const budgetStats = budgets.reduce((acc, b) => {
+    acc.totalBudget += b.amount || 0;
+    acc.totalSpent += b.spent || 0;
+    return acc;
+  }, { totalBudget: 0, totalSpent: 0 });
+  const budgetUsage = budgetStats.totalBudget > 0 ? (budgetStats.totalSpent / budgetStats.totalBudget) * 100 : 0;
 
   if (loading) return <div className="p-8 flex items-center justify-center min-h-[400px]"><Icons.Loader size={32} className="text-neutral-400" /></div>;
 
   return (
     <div className="p-8">
+      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div><h2 className="text-2xl font-light tracking-tight">{company.name}</h2><p className="text-neutral-500 text-sm mt-1">{company.description}</p></div>
         <button onClick={() => onNavigate('transactions')} className="flex items-center gap-2 px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm hover:bg-neutral-200 transition-colors"><Icons.Plus size={16} />Nouvelle Transaction</button>
       </div>
+      
+      {/* Métriques principales */}
       <div className="grid grid-cols-4 gap-4 mb-8">
-        <MetricCard label="Revenus du Mois" value={`${(metrics.totalRevenue || 0).toLocaleString('fr-FR')} FCFA`} icon="ArrowUpRight" />
-        <MetricCard label="Dépenses du Mois" value={`${(metrics.totalExpenses || 0).toLocaleString('fr-FR')} FCFA`} icon="ArrowDownRight" />
+        <MetricCard label="Revenus du Mois" value={`${(metrics.totalRevenue || 0).toLocaleString('fr-FR')} FCFA`} icon="ArrowUpRight" onClick={() => onNavigate('transactions')} />
+        <MetricCard label="Dépenses du Mois" value={`${(metrics.totalExpenses || 0).toLocaleString('fr-FR')} FCFA`} icon="ArrowDownRight" onClick={() => onNavigate('transactions')} />
         <MetricCard label="Résultat Net" value={`${(metrics.netResult || 0) >= 0 ? '+' : ''}${(metrics.netResult || 0).toLocaleString('fr-FR')} FCFA`} positive={(metrics.netResult || 0) >= 0} icon="TrendingUp" />
         <MetricCard label="En Attente" value={`${(metrics.pendingExpenses || 0).toLocaleString('fr-FR')} FCFA`} icon="Clock" warning={(metrics.pendingExpenses || 0) > 0} />
       </div>
-      <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50">
-        <div className="flex items-center justify-between mb-4"><h3 className="text-sm text-neutral-400">Transactions Récentes</h3><Icons.Receipt size={16} className="text-neutral-500" /></div>
-        {transactions.length === 0 ? <EmptyState icon={Icons.Receipt} title="Aucune transaction" description="Créez votre première transaction." action={() => onNavigate('transactions')} actionLabel="Ajouter" /> : (
-          <div className="space-y-3">{transactions.slice(0, 5).map(t => (
-            <div key={t.id} className="flex items-center justify-between py-2 border-b border-neutral-800/30 last:border-0">
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${t.type === 'revenue' ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>{t.type === 'revenue' ? <Icons.ArrowUpRight size={14} className="text-emerald-400" /> : <Icons.ArrowDownRight size={14} className="text-red-400" />}</div>
-                <div><p className="text-sm text-white">{t.description || 'Transaction'}</p><p className="text-xs text-neutral-500">{t.category} • {t.date}</p></div>
-              </div>
-              <div className="text-right"><span className={`text-sm ${t.type === 'revenue' ? 'text-emerald-400' : 'text-red-400'}`}>{t.type === 'revenue' ? '+' : '-'}{(t.amount || 0).toLocaleString('fr-FR')} FCFA</span></div>
+
+      {/* Graphiques */}
+      <div className="grid grid-cols-3 gap-6 mb-8">
+        {/* Graphique Revenus/Dépenses */}
+        <div className="col-span-2 bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Évolution Financière (6 mois)</h3>
+            <Icons.BarChart3 size={16} className="text-neutral-500" />
+          </div>
+          <BarChart data={chartData} height={180} />
+        </div>
+
+        {/* Cercles de progression */}
+        <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50">
+          <h3 className="text-sm text-neutral-400 uppercase tracking-wider mb-6">Vue d'ensemble</h3>
+          <div className="flex flex-col items-center gap-6">
+            <CircularProgress 
+              value={budgetStats.totalSpent} 
+              max={budgetStats.totalBudget || 1} 
+              size={90} 
+              strokeWidth={8}
+              label="Budget"
+              sublabel={`${budgetStats.totalSpent.toLocaleString('fr-FR')} / ${budgetStats.totalBudget.toLocaleString('fr-FR')}`}
+              color={budgetUsage > 80 ? '#f59e0b' : '#10b981'}
+            />
+            <CircularProgress 
+              value={objectivesStats.completed} 
+              max={objectivesStats.total || 1} 
+              size={90} 
+              strokeWidth={8}
+              label="Objectifs"
+              sublabel={`${objectivesStats.completed} / ${objectivesStats.total} terminés`}
+              color="#3b82f6"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Section inférieure */}
+      <div className="grid grid-cols-3 gap-6">
+        {/* Budgets */}
+        <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Budgets</h3>
+            <button onClick={() => onNavigate('budgets')} className="text-xs text-neutral-500 hover:text-white transition-colors">Voir tout →</button>
+          </div>
+          {budgets.length === 0 ? (
+            <p className="text-neutral-500 text-sm text-center py-6">Aucun budget défini</p>
+          ) : (
+            <div className="space-y-4">
+              {budgets.slice(0, 4).map(budget => {
+                const pct = budget.amount > 0 ? (budget.spent / budget.amount) * 100 : 0;
+                const isOver = pct > 100;
+                const isWarning = pct >= 80 && pct < 100;
+                return (
+                  <div key={budget.id}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm text-white truncate">{budget.name}</span>
+                      <span className={`text-xs ${isOver ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-neutral-400'}`}>{pct.toFixed(0)}%</span>
+                    </div>
+                    <MiniProgressBar value={budget.spent} max={budget.amount} color={isOver ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'} showLabel={false} />
+                  </div>
+                );
+              })}
             </div>
-          ))}</div>
-        )}
+          )}
+        </div>
+
+        {/* Objectifs */}
+        <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Objectifs</h3>
+            <button onClick={() => onNavigate('objectives')} className="text-xs text-neutral-500 hover:text-white transition-colors">Voir tout →</button>
+          </div>
+          {objectives.length === 0 ? (
+            <p className="text-neutral-500 text-sm text-center py-6">Aucun objectif défini</p>
+          ) : (
+            <div className="space-y-4">
+              {objectives.slice(0, 4).map(obj => {
+                const steps = obj.steps || [];
+                const completed = steps.filter(s => s.status === 'done').length;
+                const progress = steps.length > 0 ? (completed / steps.length) * 100 : 0;
+                return (
+                  <div key={obj.id}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm text-white truncate">{obj.title}</span>
+                      <span className={`text-xs ${obj.status === 'completed' ? 'text-emerald-400' : obj.status === 'in_progress' ? 'text-blue-400' : 'text-neutral-400'}`}>
+                        {progress.toFixed(0)}%
+                      </span>
+                    </div>
+                    <MiniProgressBar 
+                      value={completed} 
+                      max={steps.length || 1} 
+                      color={obj.status === 'completed' ? 'bg-emerald-500' : 'bg-blue-500'} 
+                      showLabel={false} 
+                    />
+                  </div>
+                );
+              })}
+              {/* Stats résumées */}
+              <div className="pt-3 mt-3 border-t border-neutral-800/50 grid grid-cols-3 gap-2 text-center">
+                <div><p className="text-lg font-light text-white">{objectivesStats.todo}</p><p className="text-[10px] text-neutral-500">À faire</p></div>
+                <div><p className="text-lg font-light text-blue-400">{objectivesStats.inProgress}</p><p className="text-[10px] text-neutral-500">En cours</p></div>
+                <div><p className="text-lg font-light text-emerald-400">{objectivesStats.completed}</p><p className="text-[10px] text-neutral-500">Terminés</p></div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Transactions récentes */}
+        <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Transactions Récentes</h3>
+            <button onClick={() => onNavigate('transactions')} className="text-xs text-neutral-500 hover:text-white transition-colors">Voir tout →</button>
+          </div>
+          {transactions.length === 0 ? (
+            <EmptyState icon={Icons.Receipt} title="Aucune transaction" description="Ajoutez votre première transaction." action={() => onNavigate('transactions')} actionLabel="Ajouter" />
+          ) : (
+            <div className="space-y-3">
+              {transactions.slice(0, 5).map(t => (
+                <div key={t.id} className="flex items-center justify-between py-2 border-b border-neutral-800/30 last:border-0">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${t.type === 'revenue' ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+                      {t.type === 'revenue' ? <Icons.ArrowUpRight size={14} className="text-emerald-400" /> : <Icons.ArrowDownRight size={14} className="text-red-400" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm text-white truncate">{t.description || 'Transaction'}</p>
+                      <p className="text-xs text-neutral-500">{t.date}</p>
+                    </div>
+                  </div>
+                  <span className={`text-sm ${t.type === 'revenue' ? 'text-emerald-400' : 'text-red-400'} flex-shrink-0 ml-2`}>
+                    {t.type === 'revenue' ? '+' : '-'}{(t.amount || 0).toLocaleString('fr-FR')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -307,7 +605,7 @@ function BudgetsPage({ company }) {
   );
 }
 
-// ==================== OBJECTIVES PAGE (avec gestion des étapes) ====================
+// ==================== OBJECTIVES PAGE ====================
 function ObjectivesPage({ company }) {
   const { userData } = useAuth();
   const [objectives, setObjectives] = useState([]);
@@ -367,7 +665,6 @@ function ObjectivesPage({ company }) {
 
   const openStepModal = (objective) => { setSelectedObjective(objective); setShowStepModal(true); };
   const openReportModal = (objective, step) => { setSelectedObjective(objective); setSelectedStep(step); setReportForm({ content: '', newStatus: step.status }); setShowReportModal(true); };
-
   const getStatusInfo = (status) => STEP_STATUSES.find(s => s.id === status) || STEP_STATUSES[0];
 
   if (loading) return <div className="p-8 flex items-center justify-center min-h-[400px]"><Icons.Loader size={32} className="text-neutral-400" /></div>;
@@ -391,7 +688,6 @@ function ObjectivesPage({ company }) {
 
             return (
               <div key={obj.id} className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 overflow-hidden">
-                {/* Header de l'objectif */}
                 <div className="p-6 cursor-pointer hover:bg-neutral-800/20 transition-colors" onClick={() => toggleExpand(obj.id)}>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -408,24 +704,18 @@ function ObjectivesPage({ company }) {
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-2xl font-light text-white">{progress}%</p>
-                        <p className="text-xs text-neutral-500">{completedSteps}/{totalSteps} étape(s)</p>
-                      </div>
+                      <div className="text-right"><p className="text-2xl font-light text-white">{progress}%</p><p className="text-xs text-neutral-500">{completedSteps}/{totalSteps} étape(s)</p></div>
                       {isExpanded ? <Icons.ChevronUp size={20} className="text-neutral-400" /> : <Icons.ChevronDown size={20} className="text-neutral-400" />}
                     </div>
                   </div>
                   {totalSteps > 0 && <div className="mt-4 w-full bg-neutral-800 rounded-full h-2"><div className="bg-emerald-500 h-2 rounded-full transition-all" style={{ width: `${progress}%` }} /></div>}
                 </div>
 
-                {/* Liste des étapes (dépliée) */}
                 {isExpanded && (
                   <div className="border-t border-neutral-800/50 p-6 bg-neutral-950/30">
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="text-sm text-neutral-400 uppercase tracking-wider">Étapes</h4>
-                      <button onClick={(e) => { e.stopPropagation(); openStepModal(obj); }} className="flex items-center gap-1 px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-xs text-white transition-colors">
-                        <Icons.Plus size={14} />Ajouter une étape
-                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); openStepModal(obj); }} className="flex items-center gap-1 px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-xs text-white transition-colors"><Icons.Plus size={14} />Ajouter une étape</button>
                     </div>
 
                     {(!obj.steps || obj.steps.length === 0) ? (
@@ -457,8 +747,6 @@ function ObjectivesPage({ company }) {
                                   {canDelete && <button onClick={() => handleDeleteStep(obj.id, step.id)} className="p-1.5 hover:bg-red-500/20 rounded-lg text-neutral-400 hover:text-red-400 transition-colors" title="Supprimer"><Icons.Trash2 size={16} /></button>}
                                 </div>
                               </div>
-
-                              {/* Historique des compte-rendus */}
                               {step.reports?.length > 0 && (
                                 <div className="mt-4 pt-4 border-t border-neutral-800/50">
                                   <p className="text-xs text-neutral-500 uppercase tracking-wider mb-2">Compte-rendus</p>
@@ -488,7 +776,6 @@ function ObjectivesPage({ company }) {
         </div>
       )}
 
-      {/* Modal: Créer Objectif */}
       <Modal isOpen={showObjectiveModal} onClose={() => setShowObjectiveModal(false)} title="Nouvel Objectif">
         <form onSubmit={handleCreateObjective} className="space-y-4">
           <div><label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Titre</label><input type="text" value={objectiveForm.title} onChange={(e) => setObjectiveForm({ ...objectiveForm, title: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white" placeholder="Titre de l'objectif" required /></div>
@@ -498,7 +785,6 @@ function ObjectivesPage({ company }) {
         </form>
       </Modal>
 
-      {/* Modal: Ajouter Étape */}
       <Modal isOpen={showStepModal} onClose={() => setShowStepModal(false)} title={`Nouvelle étape - ${selectedObjective?.title || ''}`}>
         <form onSubmit={handleCreateStep} className="space-y-4">
           <div><label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Titre de l'étape</label><input type="text" value={stepForm.title} onChange={(e) => setStepForm({ ...stepForm, title: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white" placeholder="Titre de l'étape" required /></div>
@@ -507,17 +793,16 @@ function ObjectivesPage({ company }) {
         </form>
       </Modal>
 
-      {/* Modal: Compte-rendu */}
       <Modal isOpen={showReportModal} onClose={() => setShowReportModal(false)} title={`Compte-rendu - ${selectedStep?.title || ''}`}>
         <form onSubmit={handleSubmitReport} className="space-y-4">
-          <div><label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Compte-rendu</label><textarea value={reportForm.content} onChange={(e) => setReportForm({ ...reportForm, content: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white resize-none" placeholder="Décrivez l'avancement, les difficultés rencontrées, les résultats obtenus..." rows={5} required /></div>
+          <div><label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Compte-rendu</label><textarea value={reportForm.content} onChange={(e) => setReportForm({ ...reportForm, content: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white resize-none" placeholder="Décrivez l'avancement..." rows={5} required /></div>
           <div><label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Nouveau statut (optionnel)</label>
             <select value={reportForm.newStatus} onChange={(e) => setReportForm({ ...reportForm, newStatus: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white">
               <option value="">Garder le statut actuel ({getStatusInfo(selectedStep?.status).label})</option>
               {STEP_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
           </div>
-          <button type="submit" disabled={submitting} className="w-full px-4 py-3 bg-white text-neutral-900 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">{submitting && <Icons.Loader size={18} />}{submitting ? 'Envoi...' : 'Soumettre le compte-rendu'}</button>
+          <button type="submit" disabled={submitting} className="w-full px-4 py-3 bg-white text-neutral-900 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">{submitting && <Icons.Loader size={18} />}{submitting ? 'Envoi...' : 'Soumettre'}</button>
         </form>
       </Modal>
     </div>
