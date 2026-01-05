@@ -35,7 +35,7 @@ const Icons = {
 const COMPANIES = {
   abayili_invest: { id: 'abayili_invest', name: 'Abayili Investissement', shortName: 'AI', description: 'Société de Capital-Risque', icon: 'Building2',
     revenueCategories: [{ id: 'commissions', name: 'Commissions', icon: '💰' }, { id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
-    expenseCategories: [{ id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
+    expenseCategories: [{ id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '🏢' }, { id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏢' }, { id: 'charges_fixes_donations', name: 'Charges Fixes Donations', icon: '🏢' }, { id: 'charges_fixes_frais_opérationnels', name: 'Charges Fixes Frais Opérationnels', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
   },
   abayili_consulting: { id: 'abayili_consulting', name: 'Abayili Consulting', shortName: 'AC', description: 'Consulting, Formation & Conférences', icon: 'GraduationCap',
     revenueCategories: [{ id: 'formations', name: 'Ventes de Formations', icon: '📚' }, { id: 'consulting', name: 'Missions Consulting', icon: '💼' }, { id: 'conferences', name: 'Conférences', icon: '🎤' }, { id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
@@ -43,7 +43,7 @@ const COMPANIES = {
   },
   ai_for_afrika: { id: 'ai_for_afrika', name: 'AI for Afrika', shortName: 'AFA', description: 'Intelligence Artificielle & Développement', icon: 'Brain',
     revenueCategories: [{ id: 'contrats_dev', name: 'Contrats de Développement', icon: '💻' }, { id: 'licences', name: 'Licences Logicielles', icon: '📜' }, { id: 'maintenance', name: 'Maintenance & Support', icon: '🔧' }],
-    expenseCategories: [{ id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
+    expenseCategories: [{ id: 'charges_fixes_frais_opérationnels', name: 'Charges Fixes Frais Opérationnels', icon: '🏢' }, { id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
   }
 };
 
