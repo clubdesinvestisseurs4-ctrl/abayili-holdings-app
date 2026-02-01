@@ -6,7 +6,17 @@
 import axios from 'axios';
 import { getAuth } from 'firebase/auth';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// S'assurer que l'URL se termine par /api
+const getApiUrl = () => {
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+  // Si l'URL ne se termine pas par /api, l'ajouter
+  if (!baseUrl.endsWith('/api')) {
+    return `${baseUrl}/api`;
+  }
+  return baseUrl;
+};
+
+const API_BASE_URL = getApiUrl();
 
 // Instance Axios avec intercepteur pour le token
 const api = axios.create({
