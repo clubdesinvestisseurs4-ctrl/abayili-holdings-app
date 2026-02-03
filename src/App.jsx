@@ -34,6 +34,7 @@ const Icons = {
   FileText: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>,
   Trash2: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
   MessageSquare: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+  PieChart: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>,
 };
 
 // ==================== COMPANIES CONFIG ====================
@@ -146,64 +147,145 @@ function MonthSelector({ selectedMonth, onChange, availableMonths = [] }) {
 // ==================== CHART COMPONENTS ====================
 
 // Graphique en barres pour revenus/dépenses
-function BarChart({ data, height = 200 }) {
-  if (!data || data.length === 0) {
+// Graphique Donut pour répartition par catégorie
+function DonutChart({ data, title, size = 120, strokeWidth = 20 }) {
+  if (!data || data.length === 0 || data.every(d => d.value === 0)) {
     return (
-      <div className="flex items-center justify-center h-48 text-neutral-500 text-sm">
-        Aucune donnée disponible
+      <div className="flex flex-col items-center justify-center h-full text-neutral-500 text-sm">
+        <div className="text-neutral-600 text-xs">{title}</div>
+        <div className="mt-2">Aucune donnée</div>
       </div>
     );
   }
 
-  const maxValue = Math.max(...data.flatMap(d => [d.revenue || 0, d.expense || 0]), 1);
-  const barWidth = 100 / data.length;
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const centerX = size / 2;
+  const centerY = size / 2;
+
+  // Couleurs pour les catégories
+  const colors = [
+    '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', 
+    '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
+  ];
+
+  let currentAngle = -90; // Commencer à midi
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="text-neutral-400 text-xs uppercase tracking-wider mb-3">{title}</div>
+      <div className="relative">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          {data.map((item, index) => {
+            const percentage = (item.value / total) * 100;
+            const angle = (percentage / 100) * 360;
+            const startAngle = currentAngle;
+            const endAngle = currentAngle + angle;
+            currentAngle = endAngle;
+
+            // Calculer l'arc
+            const startRad = (startAngle * Math.PI) / 180;
+            const endRad = (endAngle * Math.PI) / 180;
+            
+            const x1 = centerX + radius * Math.cos(startRad);
+            const y1 = centerY + radius * Math.sin(startRad);
+            const x2 = centerX + radius * Math.cos(endRad);
+            const y2 = centerY + radius * Math.sin(endRad);
+            
+            const largeArcFlag = angle > 180 ? 1 : 0;
+            
+            const pathData = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+
+            return (
+              <path
+                key={index}
+                d={pathData}
+                fill={colors[index % colors.length]}
+                className="transition-opacity duration-200 hover:opacity-80 cursor-pointer"
+              >
+                <title>{item.name}: {item.value.toLocaleString('fr-FR')} FCFA ({percentage.toFixed(1)}%)</title>
+              </path>
+            );
+          })}
+          {/* Cercle central pour effet donut */}
+          <circle cx={centerX} cy={centerY} r={radius * 0.55} fill="#0a0a0a" />
+          {/* Total au centre */}
+          <text x={centerX} y={centerY - 5} textAnchor="middle" fill="#fff" fontSize="12" fontWeight="600">
+            {(total / 1000).toFixed(0)}k
+          </text>
+          <text x={centerX} y={centerY + 10} textAnchor="middle" fill="#888" fontSize="8">
+            FCFA
+          </text>
+        </svg>
+      </div>
+      {/* Légende */}
+      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs max-h-24 overflow-y-auto">
+        {data.slice(0, 6).map((item, index) => (
+          <div key={index} className="flex items-center gap-1.5 truncate">
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors[index % colors.length] }}></div>
+            <span className="text-neutral-400 truncate" title={`${item.name}: ${item.value.toLocaleString('fr-FR')} FCFA`}>
+              {item.name.length > 10 ? item.name.substring(0, 10) + '...' : item.name}
+            </span>
+          </div>
+        ))}
+        {data.length > 6 && (
+          <div className="text-neutral-500 text-xs col-span-2">+{data.length - 6} autres...</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Composant pour afficher la répartition Revenus/Dépenses
+function CategoryDistributionChart({ transactions }) {
+  // Calculer la répartition par catégorie
+  const calculateCategoryData = (txs, type) => {
+    const categoryMap = {};
+    
+    txs
+      .filter(t => t.type === type && t.status === 'validated')
+      .forEach(t => {
+        const category = t.category || 'Autre';
+        categoryMap[category] = (categoryMap[category] || 0) + (t.amount || 0);
+      });
+    
+    return Object.entries(categoryMap)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  };
+
+  const revenueData = calculateCategoryData(transactions, 'revenue');
+  const expenseData = calculateCategoryData(transactions, 'expense');
+
+  const totalRevenue = revenueData.reduce((sum, d) => sum + d.value, 0);
+  const totalExpense = expenseData.reduce((sum, d) => sum + d.value, 0);
 
   return (
     <div className="w-full">
-      <svg viewBox={`0 0 400 ${height}`} className="w-full" preserveAspectRatio="xMidYMid meet">
-        {/* Lignes de grille */}
-        {[0, 25, 50, 75, 100].map(p => (
-          <g key={p}>
-            <line x1="40" y1={height - 30 - (p / 100) * (height - 50)} x2="390" y2={height - 30 - (p / 100) * (height - 50)} stroke="#333" strokeWidth="1" strokeDasharray="4" />
-            <text x="35" y={height - 26 - (p / 100) * (height - 50)} fill="#666" fontSize="10" textAnchor="end">
-              {((maxValue * p) / 100 / 1000).toFixed(0)}k
-            </text>
-          </g>
-        ))}
-        
-        {/* Barres */}
-        {data.map((item, i) => {
-          const x = 50 + i * (340 / data.length);
-          const barW = (340 / data.length) * 0.35;
-          const revenueH = ((item.revenue || 0) / maxValue) * (height - 50);
-          const expenseH = ((item.expense || 0) / maxValue) * (height - 50);
-          
-          return (
-            <g key={i}>
-              {/* Barre revenus */}
-              <rect x={x} y={height - 30 - revenueH} width={barW} height={revenueH} fill="#10b981" rx="2" className="transition-all duration-300 hover:opacity-80">
-                <title>Revenus: {(item.revenue || 0).toLocaleString('fr-FR')} FCFA</title>
-              </rect>
-              {/* Barre dépenses */}
-              <rect x={x + barW + 4} y={height - 30 - expenseH} width={barW} height={expenseH} fill="#ef4444" rx="2" className="transition-all duration-300 hover:opacity-80">
-                <title>Dépenses: {(item.expense || 0).toLocaleString('fr-FR')} FCFA</title>
-              </rect>
-              {/* Label mois */}
-              <text x={x + barW + 2} y={height - 10} fill="#888" fontSize="11" textAnchor="middle">{item.month}</text>
-            </g>
-          );
-        })}
-      </svg>
+      <div className="grid grid-cols-2 gap-6">
+        <DonutChart data={revenueData} title="Revenus" size={140} />
+        <DonutChart data={expenseData} title="Dépenses" size={140} />
+      </div>
       
-      {/* Légende */}
-      <div className="flex items-center justify-center gap-6 mt-2">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-emerald-500"></div>
-          <span className="text-xs text-neutral-400">Revenus</span>
+      {/* Résumé */}
+      <div className="mt-4 pt-4 border-t border-neutral-800/50">
+        <div className="flex justify-between items-center text-sm">
+          <div className="flex items-center gap-2">
+            <Icons.ArrowUpRight size={14} className="text-emerald-500" />
+            <span className="text-neutral-400">Total Revenus:</span>
+            <span className="text-emerald-500 font-medium">{totalRevenue.toLocaleString('fr-FR')} FCFA</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Icons.ArrowDownRight size={14} className="text-red-500" />
+            <span className="text-neutral-400">Total Dépenses:</span>
+            <span className="text-red-500 font-medium">{totalExpense.toLocaleString('fr-FR')} FCFA</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-red-500"></div>
-          <span className="text-xs text-neutral-400">Dépenses</span>
+        <div className="mt-2 flex justify-center">
+          <div className={`text-sm font-medium ${totalRevenue - totalExpense >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            Résultat: {totalRevenue - totalExpense >= 0 ? '+' : ''}{(totalRevenue - totalExpense).toLocaleString('fr-FR')} FCFA
+          </div>
         </div>
       </div>
     </div>
@@ -355,7 +437,6 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
   const [transactions, setTransactions] = useState([]);
   const [budgets, setBudgets] = useState([]);
   const [objectives, setObjectives] = useState([]);
-  const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { loadData(); }, [company.id, selectedMonth]);
@@ -374,43 +455,7 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
       setTransactions(transactionsRes.data || []);
       setBudgets(budgetsRes.data || []);
       setObjectives(objectivesRes.data || []);
-      
-      // Générer les données du graphique à partir des transactions
-      const txs = transactionsRes.data || [];
-      const monthlyData = generateMonthlyChartData(txs, selectedMonth);
-      setChartData(monthlyData);
     } catch (err) { console.error('Erreur:', err); } finally { setLoading(false); }
-  };
-
-  // Générer données pour le graphique mensuel
-  const generateMonthlyChartData = (transactions, currentMonth) => {
-    const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
-    const [year, month] = currentMonth.split('-').map(Number);
-    const data = [];
-    
-    // 6 derniers mois à partir du mois sélectionné
-    for (let i = 5; i >= 0; i--) {
-      let targetMonth = month - i;
-      let targetYear = year;
-      
-      while (targetMonth <= 0) {
-        targetMonth += 12;
-        targetYear -= 1;
-      }
-      
-      const monthStr = `${targetYear}-${String(targetMonth).padStart(2, '0')}`;
-      const monthTxs = transactions.filter(t => {
-        if (!t.date) return false;
-        return t.date.startsWith(monthStr) && t.status === 'validated';
-      });
-      
-      const revenue = monthTxs.filter(t => t.type === 'revenue').reduce((sum, t) => sum + (t.amount || 0), 0);
-      const expense = monthTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.amount || 0), 0);
-      
-      data.push({ month: months[targetMonth - 1], revenue, expense });
-    }
-    
-    return data;
   };
 
   // Calculs pour les objectifs
@@ -457,13 +502,13 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
 
       {/* Graphiques */}
       <div className="grid grid-cols-3 gap-6 mb-8">
-        {/* Graphique Revenus/Dépenses */}
+        {/* Graphique Répartition par catégorie */}
         <div className="col-span-2 bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Évolution Financière (6 mois)</h3>
-            <Icons.BarChart3 size={16} className="text-neutral-500" />
+            <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Répartition par Catégorie - {formatMonthDisplay(selectedMonth)}</h3>
+            <Icons.PieChart size={16} className="text-neutral-500" />
           </div>
-          <BarChart data={chartData} height={180} />
+          <CategoryDistributionChart transactions={transactions} />
         </div>
 
         {/* Cercles de progression */}
