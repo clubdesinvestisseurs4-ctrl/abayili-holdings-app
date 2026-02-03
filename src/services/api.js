@@ -95,6 +95,13 @@ export const TransactionAPI = {
   updateStatus: (id, status) => api.put(`/transactions/${id}/status`, { status }),
   
   /**
+   * Mettre à jour une transaction
+   * @param {string} id - ID de la transaction
+   * @param {Object} data - Données à mettre à jour
+   */
+  update: (id, data) => api.put(`/transactions/${id}`, data),
+  
+  /**
    * Supprimer une transaction
    * @param {string} id - ID de la transaction
    */

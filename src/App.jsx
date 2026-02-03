@@ -35,6 +35,8 @@ const Icons = {
   Trash2: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
   MessageSquare: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
   PieChart: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>,
+  Edit: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+  Trash: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
 };
 
 // ==================== COMPANIES CONFIG ====================
@@ -648,8 +650,10 @@ function TransactionsPage({ company, selectedMonth, onMonthChange }) {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState(null);
   const [formData, setFormData] = useState({ type: 'revenue', amount: '', category: '', description: '', date: new Date().toISOString().split('T')[0] });
   const [submitting, setSubmitting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const canValidate = userData?.role === 'admin_treasury';
 
   useEffect(() => { loadTransactions(); }, [company.id, selectedMonth]);
@@ -666,16 +670,61 @@ function TransactionsPage({ company, selectedMonth, onMonthChange }) {
     } 
   };
 
+  const resetForm = () => {
+    setFormData({ type: 'revenue', amount: '', category: '', description: '', date: new Date().toISOString().split('T')[0] });
+    setEditingTransaction(null);
+  };
+
+  const openCreateModal = () => {
+    resetForm();
+    setShowModal(true);
+  };
+
+  const openEditModal = (transaction) => {
+    setEditingTransaction(transaction);
+    setFormData({
+      type: transaction.type,
+      amount: transaction.amount.toString(),
+      category: transaction.category,
+      description: transaction.description,
+      date: transaction.date
+    });
+    setShowModal(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault(); 
     setSubmitting(true);
     try { 
-      await TransactionAPI.create({ ...formData, companyId: company.id, amount: parseFloat(formData.amount) }); 
+      if (editingTransaction) {
+        // Modification
+        await TransactionAPI.update(editingTransaction.id, { 
+          ...formData, 
+          amount: parseFloat(formData.amount) 
+        });
+      } else {
+        // Création
+        await TransactionAPI.create({ 
+          ...formData, 
+          companyId: company.id, 
+          amount: parseFloat(formData.amount) 
+        });
+      }
       setShowModal(false); 
-      setFormData({ type: 'revenue', amount: '', category: '', description: '', date: new Date().toISOString().split('T')[0] }); 
+      resetForm();
       loadTransactions(); 
     }
     catch (err) { alert('Erreur: ' + err.message); } finally { setSubmitting(false); }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await TransactionAPI.delete(id);
+      setShowDeleteConfirm(null);
+      loadTransactions();
+    } catch (err) {
+      alert('Erreur: ' + err.message);
+    }
   };
 
   const handleValidate = async (id, status) => { 
@@ -700,7 +749,7 @@ function TransactionsPage({ company, selectedMonth, onMonthChange }) {
         </div>
         <div className="flex items-center gap-4">
           <MonthSelector selectedMonth={selectedMonth} onChange={onMonthChange} />
-          <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm hover:bg-neutral-200 transition-colors">
+          <button onClick={openCreateModal} className="flex items-center gap-2 px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm hover:bg-neutral-200 transition-colors">
             <Icons.Plus size={16} />Nouvelle Transaction
           </button>
         </div>
@@ -712,23 +761,63 @@ function TransactionsPage({ company, selectedMonth, onMonthChange }) {
             icon={Icons.Receipt} 
             title="Aucune transaction" 
             description={`Aucune transaction pour ${formatMonthDisplay(selectedMonth)}. Ajoutez votre première transaction.`} 
-            action={() => setShowModal(true)} 
+            action={openCreateModal} 
             actionLabel="Ajouter" 
           />
         </div>
       ) : (
         <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 overflow-hidden">
           <table className="w-full">
-            <thead><tr className="border-b border-neutral-800"><th className="text-left p-4 text-xs text-neutral-500 uppercase tracking-wider">Date</th><th className="text-left p-4 text-xs text-neutral-500 uppercase tracking-wider">Description</th><th className="text-left p-4 text-xs text-neutral-500 uppercase tracking-wider">Catégorie</th><th className="text-right p-4 text-xs text-neutral-500 uppercase tracking-wider">Montant</th><th className="text-center p-4 text-xs text-neutral-500 uppercase tracking-wider">Statut</th>{canValidate && <th className="text-center p-4 text-xs text-neutral-500 uppercase tracking-wider">Actions</th>}</tr></thead>
+            <thead>
+              <tr className="border-b border-neutral-800">
+                <th className="text-left p-4 text-xs text-neutral-500 uppercase tracking-wider">Date</th>
+                <th className="text-left p-4 text-xs text-neutral-500 uppercase tracking-wider">Description</th>
+                <th className="text-left p-4 text-xs text-neutral-500 uppercase tracking-wider">Catégorie</th>
+                <th className="text-right p-4 text-xs text-neutral-500 uppercase tracking-wider">Montant</th>
+                <th className="text-center p-4 text-xs text-neutral-500 uppercase tracking-wider">Statut</th>
+                <th className="text-center p-4 text-xs text-neutral-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
             <tbody>
               {transactions.map(t => (
                 <tr key={t.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/20">
                   <td className="p-4 text-sm text-neutral-400">{t.date}</td>
                   <td className="p-4 text-sm text-white">{t.description}</td>
                   <td className="p-4 text-sm text-neutral-400">{t.category}</td>
-                  <td className={`p-4 text-sm text-right ${t.type === 'revenue' ? 'text-emerald-400' : 'text-red-400'}`}>{t.type === 'revenue' ? '+' : '-'}{(t.amount || 0).toLocaleString('fr-FR')} FCFA</td>
-                  <td className="p-4 text-center"><span className={`px-2 py-1 rounded-full text-xs ${t.status === 'validated' ? 'bg-emerald-500/20 text-emerald-400' : t.status === 'rejected' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>{t.status === 'validated' ? 'Validé' : t.status === 'rejected' ? 'Rejeté' : 'En attente'}</span></td>
-                  {canValidate && <td className="p-4 text-center">{t.status === 'pending' && (<div className="flex items-center justify-center gap-2"><button onClick={() => handleValidate(t.id, 'validated')} className="p-1.5 bg-emerald-500/20 text-emerald-400 rounded hover:bg-emerald-500/30 transition-colors"><Icons.Check size={14} /></button><button onClick={() => handleValidate(t.id, 'rejected')} className="p-1.5 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 transition-colors"><Icons.X size={14} /></button></div>)}</td>}
+                  <td className={`p-4 text-sm text-right ${t.type === 'revenue' ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {t.type === 'revenue' ? '+' : '-'}{(t.amount || 0).toLocaleString('fr-FR')} FCFA
+                  </td>
+                  <td className="p-4 text-center">
+                    <span className={`px-2 py-1 rounded-full text-xs ${t.status === 'validated' ? 'bg-emerald-500/20 text-emerald-400' : t.status === 'rejected' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                      {t.status === 'validated' ? 'Validé' : t.status === 'rejected' ? 'Rejeté' : 'En attente'}
+                    </span>
+                  </td>
+                  <td className="p-4 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      {/* Boutons de validation pour admin */}
+                      {canValidate && t.status === 'pending' && (
+                        <>
+                          <button onClick={() => handleValidate(t.id, 'validated')} className="p-1.5 bg-emerald-500/20 text-emerald-400 rounded hover:bg-emerald-500/30 transition-colors" title="Valider">
+                            <Icons.Check size={14} />
+                          </button>
+                          <button onClick={() => handleValidate(t.id, 'rejected')} className="p-1.5 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 transition-colors" title="Rejeter">
+                            <Icons.X size={14} />
+                          </button>
+                        </>
+                      )}
+                      {/* Boutons modifier/supprimer */}
+                      {canValidate && (
+                        <>
+                          <button onClick={() => openEditModal(t)} className="p-1.5 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30 transition-colors" title="Modifier">
+                            <Icons.Edit size={14} />
+                          </button>
+                          <button onClick={() => setShowDeleteConfirm(t)} className="p-1.5 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 transition-colors" title="Supprimer">
+                            <Icons.Trash size={14} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -736,18 +825,65 @@ function TransactionsPage({ company, selectedMonth, onMonthChange }) {
         </div>
       )}
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Nouvelle Transaction">
+      {/* Modal Création/Modification */}
+      <Modal isOpen={showModal} onClose={() => { setShowModal(false); resetForm(); }} title={editingTransaction ? "Modifier la Transaction" : "Nouvelle Transaction"}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-2">
             <button type="button" onClick={() => setFormData({ ...formData, type: 'revenue', category: '' })} className={`px-4 py-3 rounded-lg border transition-colors ${formData.type === 'revenue' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'border-neutral-700 text-neutral-400'}`}>Revenu</button>
             <button type="button" onClick={() => setFormData({ ...formData, type: 'expense', category: '' })} className={`px-4 py-3 rounded-lg border transition-colors ${formData.type === 'expense' ? 'bg-red-500/20 border-red-500 text-red-400' : 'border-neutral-700 text-neutral-400'}`}>Dépense</button>
           </div>
-          <div><label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Catégorie</label><select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white" required><option value="">Sélectionner...</option>{categories.map(cat => <option key={cat.id} value={cat.name}>{cat.icon} {cat.name}</option>)}</select></div>
-          <div><label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Montant (FCFA)</label><input type="number" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white" placeholder="0" required min="1" /></div>
-          <div><label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Description</label><input type="text" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white" placeholder="Description..." required /></div>
-          <div><label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Date</label><input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white" required /></div>
-          <button type="submit" disabled={submitting} className="w-full px-4 py-3 bg-white text-neutral-900 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">{submitting && <Icons.Loader size={18} />}{submitting ? 'Création...' : 'Créer'}</button>
+          <div>
+            <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Catégorie</label>
+            <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white" required>
+              <option value="">Sélectionner...</option>
+              {categories.map(cat => <option key={cat.id} value={cat.name}>{cat.icon} {cat.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Montant (FCFA)</label>
+            <input type="number" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white" placeholder="0" required min="1" />
+          </div>
+          <div>
+            <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Description</label>
+            <input type="text" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white" placeholder="Description..." required />
+          </div>
+          <div>
+            <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Date</label>
+            <input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white" required />
+          </div>
+          <button type="submit" disabled={submitting} className="w-full px-4 py-3 bg-white text-neutral-900 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            {submitting && <Icons.Loader size={18} />}
+            {submitting ? (editingTransaction ? 'Modification...' : 'Création...') : (editingTransaction ? 'Modifier' : 'Créer')}
+          </button>
         </form>
+      </Modal>
+
+      {/* Modal Confirmation Suppression */}
+      <Modal isOpen={!!showDeleteConfirm} onClose={() => setShowDeleteConfirm(null)} title="Confirmer la suppression">
+        <div className="space-y-4">
+          <p className="text-neutral-400">
+            Êtes-vous sûr de vouloir supprimer cette transaction ?
+          </p>
+          {showDeleteConfirm && (
+            <div className="bg-neutral-800/50 rounded-lg p-4">
+              <p className="text-white font-medium">{showDeleteConfirm.description}</p>
+              <p className="text-sm text-neutral-400 mt-1">
+                {showDeleteConfirm.date} • {showDeleteConfirm.category} • 
+                <span className={showDeleteConfirm.type === 'revenue' ? ' text-emerald-400' : ' text-red-400'}>
+                  {showDeleteConfirm.type === 'revenue' ? ' +' : ' -'}{(showDeleteConfirm.amount || 0).toLocaleString('fr-FR')} FCFA
+                </span>
+              </p>
+            </div>
+          )}
+          <div className="flex gap-3">
+            <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 px-4 py-3 bg-neutral-800 text-white rounded-lg hover:bg-neutral-700 transition-colors">
+              Annuler
+            </button>
+            <button onClick={() => handleDelete(showDeleteConfirm.id)} className="flex-1 px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+              Supprimer
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
@@ -760,10 +896,12 @@ function BudgetsPage({ company, selectedMonth, onMonthChange }) {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showRenewModal, setShowRenewModal] = useState(false);
+  const [editingBudget, setEditingBudget] = useState(null);
   const [formData, setFormData] = useState({ type: 'expense', name: '', amount: '', period: 'monthly' });
   const [renewData, setRenewData] = useState({ sourceMonth: '', targetMonth: '' });
   const [submitting, setSubmitting] = useState(false);
   const [availableMonths, setAvailableMonths] = useState([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const canManage = userData?.role === 'admin_treasury';
 
   useEffect(() => { loadBudgets(); loadAvailableMonths(); }, [company.id, selectedMonth]);
@@ -789,17 +927,63 @@ function BudgetsPage({ company, selectedMonth, onMonthChange }) {
     }
   };
 
+  const resetForm = () => {
+    setFormData({ type: 'expense', name: '', amount: '', period: 'monthly' });
+    setEditingBudget(null);
+  };
+
+  const openCreateModal = () => {
+    resetForm();
+    setShowModal(true);
+  };
+
+  const openEditModal = (budget) => {
+    setEditingBudget(budget);
+    setFormData({
+      type: budget.type,
+      name: budget.name,
+      amount: budget.amount.toString(),
+      period: budget.period || 'monthly'
+    });
+    setShowModal(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault(); 
     setSubmitting(true);
     try { 
-      await BudgetAPI.create({ ...formData, companyId: company.id, amount: parseFloat(formData.amount), month: selectedMonth }); 
+      if (editingBudget) {
+        // Modification
+        await BudgetAPI.update(editingBudget.id, { 
+          ...formData, 
+          amount: parseFloat(formData.amount) 
+        });
+      } else {
+        // Création
+        await BudgetAPI.create({ 
+          ...formData, 
+          companyId: company.id, 
+          amount: parseFloat(formData.amount), 
+          month: selectedMonth 
+        });
+      }
       setShowModal(false); 
-      setFormData({ type: 'expense', name: '', amount: '', period: 'monthly' }); 
+      resetForm();
       loadBudgets();
       loadAvailableMonths();
     }
     catch (err) { alert('Erreur: ' + err.message); } finally { setSubmitting(false); }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await BudgetAPI.delete(id);
+      setShowDeleteConfirm(null);
+      loadBudgets();
+      loadAvailableMonths();
+    } catch (err) {
+      alert('Erreur: ' + err.message);
+    }
   };
 
   const handleRenew = async (e) => {
@@ -847,7 +1031,7 @@ function BudgetsPage({ company, selectedMonth, onMonthChange }) {
               <button onClick={openRenewModal} className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white rounded-lg text-sm hover:bg-neutral-700 transition-colors" title="Renouveler les budgets pour un nouveau mois">
                 <Icons.RefreshCw size={16} />Renouveler
               </button>
-              <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm hover:bg-neutral-200 transition-colors">
+              <button onClick={openCreateModal} className="flex items-center gap-2 px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm hover:bg-neutral-200 transition-colors">
                 <Icons.Plus size={16} />Nouveau Budget
               </button>
             </div>
@@ -861,7 +1045,7 @@ function BudgetsPage({ company, selectedMonth, onMonthChange }) {
             icon={Icons.PiggyBank} 
             title="Aucun budget" 
             description={`Aucun budget pour ${formatMonthDisplay(selectedMonth)}. Créez des budgets pour suivre vos dépenses ou renouvelez ceux d'un mois précédent.`} 
-            action={canManage ? () => setShowModal(true) : null} 
+            action={canManage ? openCreateModal : null} 
             actionLabel="Créer" 
           />
           {canManage && availableMonths.length > 0 && (
@@ -886,7 +1070,19 @@ function BudgetsPage({ company, selectedMonth, onMonthChange }) {
                     <p className="text-white font-medium">{budget.name}</p>
                     <p className="text-xs text-neutral-500">{budget.type === 'revenue' ? 'Revenu' : 'Dépense'} • {budget.period === 'monthly' ? 'Mensuel' : budget.period === 'quarterly' ? 'Trimestriel' : 'Annuel'}</p>
                   </div>
-                  {(isOver || isWarning) && <Icons.AlertTriangle size={20} className={isOver ? 'text-red-400' : 'text-amber-400'} />}
+                  <div className="flex items-center gap-2">
+                    {(isOver || isWarning) && <Icons.AlertTriangle size={20} className={isOver ? 'text-red-400' : 'text-amber-400'} />}
+                    {canManage && (
+                      <>
+                        <button onClick={() => openEditModal(budget)} className="p-1.5 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30 transition-colors" title="Modifier">
+                          <Icons.Edit size={14} />
+                        </button>
+                        <button onClick={() => setShowDeleteConfirm(budget)} className="p-1.5 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 transition-colors" title="Supprimer">
+                          <Icons.Trash size={14} />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className="mb-2">
                   <div className="flex justify-between text-sm mb-1">
@@ -906,23 +1102,44 @@ function BudgetsPage({ company, selectedMonth, onMonthChange }) {
         </div>
       )}
 
-      {/* Modal Nouveau Budget */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Nouveau Budget">
+      {/* Modal Nouveau/Modifier Budget */}
+      <Modal isOpen={showModal} onClose={() => { setShowModal(false); resetForm(); }} title={editingBudget ? "Modifier le Budget" : "Nouveau Budget"}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-2">
             <button type="button" onClick={() => setFormData({ ...formData, type: 'revenue', name: '' })} className={`px-4 py-3 rounded-lg border transition-colors ${formData.type === 'revenue' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'border-neutral-700 text-neutral-400'}`}>Revenu</button>
             <button type="button" onClick={() => setFormData({ ...formData, type: 'expense', name: '' })} className={`px-4 py-3 rounded-lg border transition-colors ${formData.type === 'expense' ? 'bg-red-500/20 border-red-500 text-red-400' : 'border-neutral-700 text-neutral-400'}`}>Dépense</button>
           </div>
-          <div><label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Catégorie</label><select value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white" required><option value="">Sélectionner...</option>{categories.map(cat => <option key={cat.id} value={cat.name}>{cat.icon} {cat.name}</option>)}</select></div>
-          <div><label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Montant (FCFA)</label><input type="number" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white" placeholder="0" required min="1" /></div>
-          <div><label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Période</label><select value={formData.period} onChange={(e) => setFormData({ ...formData, period: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white"><option value="monthly">Mensuel</option><option value="quarterly">Trimestriel</option><option value="yearly">Annuel</option></select></div>
-          <div className="bg-neutral-800/30 rounded-lg p-3">
-            <p className="text-xs text-neutral-400">
-              <Icons.Calendar size={14} className="inline mr-1" />
-              Ce budget sera créé pour <span className="text-white">{formatMonthDisplay(selectedMonth)}</span>
-            </p>
+          <div>
+            <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Catégorie</label>
+            <select value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white" required>
+              <option value="">Sélectionner...</option>
+              {categories.map(cat => <option key={cat.id} value={cat.name}>{cat.icon} {cat.name}</option>)}
+            </select>
           </div>
-          <button type="submit" disabled={submitting} className="w-full px-4 py-3 bg-white text-neutral-900 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">{submitting && <Icons.Loader size={18} />}{submitting ? 'Création...' : 'Créer'}</button>
+          <div>
+            <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Montant (FCFA)</label>
+            <input type="number" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white" placeholder="0" required min="1" />
+          </div>
+          <div>
+            <label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Période</label>
+            <select value={formData.period} onChange={(e) => setFormData({ ...formData, period: e.target.value })} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white">
+              <option value="monthly">Mensuel</option>
+              <option value="quarterly">Trimestriel</option>
+              <option value="yearly">Annuel</option>
+            </select>
+          </div>
+          {!editingBudget && (
+            <div className="bg-neutral-800/30 rounded-lg p-3">
+              <p className="text-xs text-neutral-400">
+                <Icons.Calendar size={14} className="inline mr-1" />
+                Ce budget sera créé pour <span className="text-white">{formatMonthDisplay(selectedMonth)}</span>
+              </p>
+            </div>
+          )}
+          <button type="submit" disabled={submitting} className="w-full px-4 py-3 bg-white text-neutral-900 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            {submitting && <Icons.Loader size={18} />}
+            {submitting ? (editingBudget ? 'Modification...' : 'Création...') : (editingBudget ? 'Modifier' : 'Créer')}
+          </button>
         </form>
       </Modal>
 
@@ -973,6 +1190,33 @@ function BudgetsPage({ company, selectedMonth, onMonthChange }) {
             {submitting ? 'Renouvellement...' : 'Renouveler les Budgets'}
           </button>
         </form>
+      </Modal>
+
+      {/* Modal Confirmation Suppression */}
+      <Modal isOpen={!!showDeleteConfirm} onClose={() => setShowDeleteConfirm(null)} title="Confirmer la suppression">
+        <div className="space-y-4">
+          <p className="text-neutral-400">
+            Êtes-vous sûr de vouloir supprimer ce budget ?
+          </p>
+          {showDeleteConfirm && (
+            <div className="bg-neutral-800/50 rounded-lg p-4">
+              <p className="text-white font-medium">{showDeleteConfirm.name}</p>
+              <p className="text-sm text-neutral-400 mt-1">
+                {showDeleteConfirm.type === 'revenue' ? 'Revenu' : 'Dépense'} • 
+                Budget: {(showDeleteConfirm.amount || 0).toLocaleString('fr-FR')} FCFA • 
+                Consommé: {(showDeleteConfirm.spent || 0).toLocaleString('fr-FR')} FCFA
+              </p>
+            </div>
+          )}
+          <div className="flex gap-3">
+            <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 px-4 py-3 bg-neutral-800 text-white rounded-lg hover:bg-neutral-700 transition-colors">
+              Annuler
+            </button>
+            <button onClick={() => handleDelete(showDeleteConfirm.id)} className="flex-1 px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+              Supprimer
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
