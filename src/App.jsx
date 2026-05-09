@@ -37,6 +37,8 @@ const Icons = {
   PieChart: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>,
   Edit: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
   Trash: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
+  ChefHat: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>,
+  Layers: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>,
 };
 
 // ==================== COMPANIES CONFIG ====================
@@ -52,6 +54,10 @@ const COMPANIES = {
   ai_for_afrika: { id: 'ai_for_afrika', name: 'AI for Afrika', shortName: 'AFA', description: 'Intelligence Artificielle & Développement', icon: 'Brain',
     revenueCategories: [{ id: 'contrats_dev', name: 'Contrats de Développement', icon: '💻' }, { id: 'licences', name: 'Licences Logicielles', icon: '📜' }, { id: 'maintenance', name: 'Maintenance & Support', icon: '🔧' }],
     expenseCategories: [{ id: 'charges_fixes_frais_opérationnels', name: 'Charges Fixes Frais Opérationnels', icon: '🏢' }, { id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
+  },
+  gourmandises_africaines: { id: 'gourmandises_africaines', name: 'Gourmandises Africaines', shortName: 'GA', description: 'Restauration & Traiteur Africain', icon: 'ChefHat',
+    revenueCategories: [{ id: 'restauration', name: 'Restauration', icon: '🍽️' }, { id: 'traiteur', name: 'Traiteur & Événements', icon: '🥘' }, { id: 'vente_emporter', name: 'Ventes à Emporter', icon: '📦' }, { id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
+    expenseCategories: [{ id: 'matieres_premieres', name: 'Matières Premières', icon: '🧺' }, { id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏦' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
   }
 };
 
@@ -97,50 +103,76 @@ const getNextMonth = (monthStr) => {
 };
 
 // ==================== MONTH SELECTOR COMPONENT ====================
-function MonthSelector({ selectedMonth, onChange, availableMonths = [] }) {
+function MonthSelector({ selectedMonth, onChange, availableMonths = [], isTotal = false, onToggleTotal }) {
   const currentMonth = getCurrentMonth();
-  const isCurrentMonth = selectedMonth === currentMonth;
-  const canGoNext = selectedMonth < currentMonth;
+  const isCurrentMonth = !isTotal && selectedMonth === currentMonth;
+  const canGoNext = !isTotal && selectedMonth < currentMonth;
 
   return (
-    <div className="flex items-center gap-2 bg-neutral-800/50 rounded-xl px-2 py-1">
-      <button
-        onClick={() => onChange(getPreviousMonth(selectedMonth))}
-        className="p-2 hover:bg-neutral-700/50 rounded-lg transition-colors text-neutral-400 hover:text-white"
-        title="Mois précédent"
-      >
-        <Icons.ChevronLeft size={18} />
-      </button>
-      
-      <div className="flex items-center gap-2 px-3 py-1 min-w-[160px] justify-center">
-        <Icons.Calendar size={16} className="text-neutral-500" />
-        <span className="text-sm font-medium text-white">
-          {formatMonthDisplay(selectedMonth)}
-        </span>
-        {isCurrentMonth && (
-          <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">
-            Actuel
-          </span>
-        )}
-      </div>
-      
-      <button
-        onClick={() => canGoNext && onChange(getNextMonth(selectedMonth))}
-        disabled={!canGoNext}
-        className={`p-2 rounded-lg transition-colors ${canGoNext ? 'hover:bg-neutral-700/50 text-neutral-400 hover:text-white' : 'text-neutral-600 cursor-not-allowed'}`}
-        title="Mois suivant"
-      >
-        <Icons.ChevronRight size={18} />
-      </button>
-      
-      {!isCurrentMonth && (
+    <div className="flex items-center gap-2">
+      {onToggleTotal && (
         <button
-          onClick={() => onChange(currentMonth)}
-          className="ml-1 p-2 hover:bg-neutral-700/50 rounded-lg transition-colors text-neutral-400 hover:text-emerald-400"
-          title="Revenir au mois actuel"
+          onClick={onToggleTotal}
+          className={`px-3 py-2 rounded-xl text-xs font-medium border transition-colors ${
+            isTotal
+              ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+              : 'bg-neutral-800/50 text-neutral-400 border-neutral-700/30 hover:text-white hover:border-neutral-600'
+          }`}
+          title={isTotal ? 'Passer en vue mensuelle' : 'Voir le total annuel'}
         >
-          <Icons.RefreshCw size={16} />
+          <Icons.Layers size={14} className="inline mr-1.5" />
+          Total
         </button>
+      )}
+
+      {isTotal ? (
+        <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2">
+          <Icons.Calendar size={15} className="text-amber-400" />
+          <span className="text-sm font-medium text-amber-400">
+            Janv. — {formatMonthDisplay(currentMonth)}
+          </span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 bg-neutral-800/50 rounded-xl px-2 py-1">
+          <button
+            onClick={() => onChange(getPreviousMonth(selectedMonth))}
+            className="p-2 hover:bg-neutral-700/50 rounded-lg transition-colors text-neutral-400 hover:text-white"
+            title="Mois précédent"
+          >
+            <Icons.ChevronLeft size={18} />
+          </button>
+
+          <div className="flex items-center gap-2 px-3 py-1 min-w-[160px] justify-center">
+            <Icons.Calendar size={16} className="text-neutral-500" />
+            <span className="text-sm font-medium text-white">
+              {formatMonthDisplay(selectedMonth)}
+            </span>
+            {isCurrentMonth && (
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">
+                Actuel
+              </span>
+            )}
+          </div>
+
+          <button
+            onClick={() => canGoNext && onChange(getNextMonth(selectedMonth))}
+            disabled={!canGoNext}
+            className={`p-2 rounded-lg transition-colors ${canGoNext ? 'hover:bg-neutral-700/50 text-neutral-400 hover:text-white' : 'text-neutral-600 cursor-not-allowed'}`}
+            title="Mois suivant"
+          >
+            <Icons.ChevronRight size={18} />
+          </button>
+
+          {!isCurrentMonth && (
+            <button
+              onClick={() => onChange(currentMonth)}
+              className="ml-1 p-2 hover:bg-neutral-700/50 rounded-lg transition-colors text-neutral-400 hover:text-emerald-400"
+              title="Revenir au mois actuel"
+            >
+              <Icons.RefreshCw size={16} />
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -433,6 +465,159 @@ function LoginPage() {
   );
 }
 
+// ==================== YEARLY TOTAL VIEW ====================
+function YearlyTotalView({ company }) {
+  const [loading, setLoading] = useState(true);
+  const [monthlyStats, setMonthlyStats] = useState([]);
+  const currentYear = new Date().getFullYear();
+  const currentMonthNum = parseInt(getCurrentMonth().split('-')[1]);
+  const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+
+  useEffect(() => { loadYearData(); }, [company.id]);
+
+  const loadYearData = async () => {
+    setLoading(true);
+    try {
+      const res = await AnalyticsAPI.getMonthlySummary(company.id, currentYear);
+      const rawData = res.data || [];
+      const normalized = rawData
+        .filter(d => {
+          const parts = (d.month || '').split('-').map(Number);
+          return parts[0] === currentYear && parts[1] >= 1 && parts[1] <= currentMonthNum;
+        })
+        .map(d => {
+          const m = parseInt(d.month.split('-')[1]);
+          return {
+            monthNum: m,
+            monthLabel: MONTHS_FR[m - 1],
+            revenue: d.revenue || d.totalRevenue || 0,
+            expense: d.expense || d.totalExpenses || 0,
+          };
+        });
+      const filled = [];
+      for (let m = 1; m <= currentMonthNum; m++) {
+        const found = normalized.find(d => d.monthNum === m);
+        filled.push(found || { monthNum: m, monthLabel: MONTHS_FR[m - 1], revenue: 0, expense: 0 });
+      }
+      setMonthlyStats(filled);
+    } catch {
+      try {
+        const months = Array.from({ length: currentMonthNum }, (_, i) =>
+          `${currentYear}-${String(i + 1).padStart(2, '0')}`
+        );
+        const results = await Promise.all(
+          months.map(async (monthStr) => {
+            try {
+              const r = await TransactionAPI.getAll(company.id, { month: monthStr });
+              const txs = r.data || [];
+              const validated = txs.filter(t => t.status === 'validated');
+              const revenue = validated.filter(t => t.type === 'revenue').reduce((s, t) => s + (t.amount || 0), 0);
+              const expense = validated.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
+              const m = parseInt(monthStr.split('-')[1]);
+              return { monthNum: m, monthLabel: MONTHS_FR[m - 1], revenue, expense };
+            } catch {
+              const m = parseInt(monthStr.split('-')[1]);
+              return { monthNum: m, monthLabel: MONTHS_FR[m - 1], revenue: 0, expense: 0 };
+            }
+          })
+        );
+        setMonthlyStats(results);
+      } catch (err2) {
+        console.error('Erreur chargement total annuel:', err2);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalRevenue = monthlyStats.reduce((s, d) => s + d.revenue, 0);
+  const totalExpense = monthlyStats.reduce((s, d) => s + d.expense, 0);
+  const netResult = totalRevenue - totalExpense;
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-16">
+      <Icons.Loader size={32} className="text-neutral-400" />
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        <MetricCard
+          label={`Total Entrées ${currentYear}`}
+          value={`${totalRevenue.toLocaleString('fr-FR')} FCFA`}
+          icon="ArrowUpRight"
+        />
+        <MetricCard
+          label={`Total Sorties ${currentYear}`}
+          value={`${totalExpense.toLocaleString('fr-FR')} FCFA`}
+          icon="ArrowDownRight"
+        />
+        <MetricCard
+          label="Résultat Net Annuel"
+          value={`${netResult >= 0 ? '+' : ''}${netResult.toLocaleString('fr-FR')} FCFA`}
+          positive={netResult >= 0}
+          icon="TrendingUp"
+        />
+      </div>
+
+      <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 overflow-hidden">
+        <div className="flex items-center justify-between p-6 border-b border-neutral-800/50">
+          <h3 className="text-sm text-neutral-400 uppercase tracking-wider">
+            Récapitulatif Mensuel — Janvier à {MONTHS_FR[currentMonthNum - 1]} {currentYear}
+          </h3>
+          <Icons.Calendar size={16} className="text-neutral-500" />
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-neutral-800/50">
+                <th className="text-left px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Mois</th>
+                <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Entrées</th>
+                <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Sorties</th>
+                <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Résultat Net</th>
+              </tr>
+            </thead>
+            <tbody>
+              {monthlyStats.map((row, i) => {
+                const net = row.revenue - row.expense;
+                return (
+                  <tr key={row.monthNum} className={`border-b border-neutral-800/30 last:border-0 hover:bg-neutral-800/20 transition-colors ${i % 2 !== 0 ? 'bg-neutral-900/20' : ''}`}>
+                    <td className="px-6 py-4 text-sm text-white">{row.monthLabel}</td>
+                    <td className="px-6 py-4 text-sm text-right text-emerald-400">
+                      {row.revenue > 0 ? `+${row.revenue.toLocaleString('fr-FR')}` : row.revenue.toLocaleString('fr-FR')} FCFA
+                    </td>
+                    <td className="px-6 py-4 text-sm text-right text-red-400">
+                      {row.expense > 0 ? `-${row.expense.toLocaleString('fr-FR')}` : row.expense.toLocaleString('fr-FR')} FCFA
+                    </td>
+                    <td className={`px-6 py-4 text-sm text-right font-medium ${net >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {net >= 0 ? '+' : ''}{net.toLocaleString('fr-FR')} FCFA
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-neutral-700 bg-neutral-800/30">
+                <td className="px-6 py-4 text-sm font-medium text-white uppercase tracking-wider">Total</td>
+                <td className="px-6 py-4 text-sm text-right text-emerald-400 font-semibold">
+                  +{totalRevenue.toLocaleString('fr-FR')} FCFA
+                </td>
+                <td className="px-6 py-4 text-sm text-right text-red-400 font-semibold">
+                  -{totalExpense.toLocaleString('fr-FR')} FCFA
+                </td>
+                <td className={`px-6 py-4 text-sm text-right font-bold ${netResult >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {netResult >= 0 ? '+' : ''}{netResult.toLocaleString('fr-FR')} FCFA
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ==================== DASHBOARD PAGE (avec graphiques et navigation mensuelle) ====================
 function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
   const [metrics, setMetrics] = useState({ totalRevenue: 0, totalExpenses: 0, netResult: 0, pendingExpenses: 0 });
@@ -440,8 +625,9 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
   const [budgets, setBudgets] = useState([]);
   const [objectives, setObjectives] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isTotal, setIsTotal] = useState(false);
 
-  useEffect(() => { loadData(); }, [company.id, selectedMonth]);
+  useEffect(() => { if (!isTotal) loadData(); }, [company.id, selectedMonth, isTotal]);
 
   const loadData = async () => {
     try {
@@ -487,13 +673,25 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
           <p className="text-neutral-500 text-sm mt-1">{company.description}</p>
         </div>
         <div className="flex items-center gap-4">
-          <MonthSelector selectedMonth={selectedMonth} onChange={onMonthChange} />
-          <button onClick={() => onNavigate('transactions')} className="flex items-center gap-2 px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm hover:bg-neutral-200 transition-colors">
-            <Icons.Plus size={16} />Nouvelle Transaction
-          </button>
+          <MonthSelector
+            selectedMonth={selectedMonth}
+            onChange={onMonthChange}
+            isTotal={isTotal}
+            onToggleTotal={() => setIsTotal(v => !v)}
+          />
+          {!isTotal && (
+            <button onClick={() => onNavigate('transactions')} className="flex items-center gap-2 px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm hover:bg-neutral-200 transition-colors">
+              <Icons.Plus size={16} />Nouvelle Transaction
+            </button>
+          )}
         </div>
       </div>
-      
+
+      {/* Vue Total Annuel */}
+      {isTotal ? (
+        <YearlyTotalView company={company} />
+      ) : (
+        <>
       {/* Métriques principales */}
       <div className="grid grid-cols-4 gap-4 mb-8">
         <MetricCard label={`Revenus - ${formatMonthDisplay(selectedMonth)}`} value={`${(metrics.totalRevenue || 0).toLocaleString('fr-FR')} FCFA`} icon="ArrowUpRight" onClick={() => onNavigate('transactions')} />
@@ -640,6 +838,8 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
           )}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
