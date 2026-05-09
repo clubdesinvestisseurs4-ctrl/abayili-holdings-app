@@ -478,53 +478,32 @@ function YearlyTotalView({ company }) {
   const loadYearData = async () => {
     setLoading(true);
     try {
-      const res = await AnalyticsAPI.getMonthlySummary(company.id, currentYear);
-      const rawData = res.data || [];
-      const normalized = rawData
-        .filter(d => {
-          const parts = (d.month || '').split('-').map(Number);
-          return parts[0] === currentYear && parts[1] >= 1 && parts[1] <= currentMonthNum;
+      const months = Array.from({ length: currentMonthNum }, (_, i) =>
+        `${currentYear}-${String(i + 1).padStart(2, '0')}`
+      );
+      const results = await Promise.all(
+        months.map(async (monthStr) => {
+          try {
+            const r = await TransactionAPI.getAll(company.id, { month: monthStr });
+            const txs = r.data || [];
+            const validated = txs.filter(t => t.status === 'validated');
+            const revenue = validated
+              .filter(t => t.type === 'revenue')
+              .reduce((s, t) => s + (t.amount || 0), 0);
+            const expense = validated
+              .filter(t => t.type === 'expense')
+              .reduce((s, t) => s + (t.amount || 0), 0);
+            const m = parseInt(monthStr.split('-')[1]);
+            return { monthNum: m, monthLabel: MONTHS_FR[m - 1], revenue, expense };
+          } catch {
+            const m = parseInt(monthStr.split('-')[1]);
+            return { monthNum: m, monthLabel: MONTHS_FR[m - 1], revenue: 0, expense: 0 };
+          }
         })
-        .map(d => {
-          const m = parseInt(d.month.split('-')[1]);
-          return {
-            monthNum: m,
-            monthLabel: MONTHS_FR[m - 1],
-            revenue: d.revenue || d.totalRevenue || 0,
-            expense: d.expense || d.totalExpenses || 0,
-          };
-        });
-      const filled = [];
-      for (let m = 1; m <= currentMonthNum; m++) {
-        const found = normalized.find(d => d.monthNum === m);
-        filled.push(found || { monthNum: m, monthLabel: MONTHS_FR[m - 1], revenue: 0, expense: 0 });
-      }
-      setMonthlyStats(filled);
-    } catch {
-      try {
-        const months = Array.from({ length: currentMonthNum }, (_, i) =>
-          `${currentYear}-${String(i + 1).padStart(2, '0')}`
-        );
-        const results = await Promise.all(
-          months.map(async (monthStr) => {
-            try {
-              const r = await TransactionAPI.getAll(company.id, { month: monthStr });
-              const txs = r.data || [];
-              const validated = txs.filter(t => t.status === 'validated');
-              const revenue = validated.filter(t => t.type === 'revenue').reduce((s, t) => s + (t.amount || 0), 0);
-              const expense = validated.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
-              const m = parseInt(monthStr.split('-')[1]);
-              return { monthNum: m, monthLabel: MONTHS_FR[m - 1], revenue, expense };
-            } catch {
-              const m = parseInt(monthStr.split('-')[1]);
-              return { monthNum: m, monthLabel: MONTHS_FR[m - 1], revenue: 0, expense: 0 };
-            }
-          })
-        );
-        setMonthlyStats(results);
-      } catch (err2) {
-        console.error('Erreur chargement total annuel:', err2);
-      }
+      );
+      setMonthlyStats(results);
+    } catch (err) {
+      console.error('Erreur chargement total annuel:', err);
     } finally {
       setLoading(false);
     }
@@ -1616,7 +1595,11 @@ function MainLayout() {
 
   const company = COMPANIES[activeCompany];
   const userRole = getUserRole();
-  const accessibleCompanies = Object.values(COMPANIES).filter(c => !userData?.companies?.length || userData.companies.includes(c.id));
+  const accessibleCompanies = Object.values(COMPANIES).filter(c =>
+    userData?.role === 'admin_treasury' ||
+    !userData?.companies?.length ||
+    userData.companies.includes(c.id)
+  );
 
   const navItems = [
     { id: 'dashboard', label: 'Tableau de Bord', Icon: Icons.BarChart3 },
