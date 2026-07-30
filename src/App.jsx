@@ -39,6 +39,7 @@ const Icons = {
   Trash: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
   ChefHat: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>,
   Layers: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>,
+  Menu: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>,
 };
 
 // ==================== COMPANIES CONFIG ====================
@@ -297,20 +298,20 @@ function CategoryDistributionChart({ transactions }) {
 
   return (
     <div className="w-full">
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <DonutChart data={revenueData} title="Revenus" size={140} />
         <DonutChart data={expenseData} title="Dépenses" size={140} />
       </div>
       
       {/* Résumé */}
       <div className="mt-4 pt-4 border-t border-neutral-800/50">
-        <div className="flex justify-between items-center text-sm">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 sm:justify-between sm:items-center text-sm">
+          <div className="flex items-center gap-2 flex-wrap">
             <Icons.ArrowUpRight size={14} className="text-emerald-500" />
             <span className="text-neutral-400">Total Revenus:</span>
             <span className="text-emerald-500 font-medium">{totalRevenue.toLocaleString('fr-FR')} FCFA</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Icons.ArrowDownRight size={14} className="text-red-500" />
             <span className="text-neutral-400">Total Dépenses:</span>
             <span className="text-red-500 font-medium">{totalExpense.toLocaleString('fr-FR')} FCFA</span>
@@ -410,13 +411,13 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }) {
   if (!isOpen) return null;
   const sizeClass = size === 'lg' ? 'max-w-2xl' : size === 'xl' ? 'max-w-4xl' : 'max-w-lg';
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className={`bg-neutral-900 rounded-2xl border border-neutral-800 w-full ${sizeClass} max-h-[90vh] overflow-auto`} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-6 border-b border-neutral-800 sticky top-0 bg-neutral-900 z-10">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <div className={`bg-neutral-900 border border-neutral-800 w-full ${sizeClass} h-full sm:h-auto max-h-full sm:max-h-[90vh] rounded-none sm:rounded-2xl overflow-auto`} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-neutral-800 sticky top-0 bg-neutral-900 z-10">
           <h3 className="text-lg font-medium">{title}</h3>
           <button onClick={onClose} className="p-2 hover:bg-neutral-800 rounded-lg transition-colors"><Icons.X size={20} /></button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-4 sm:p-6">{children}</div>
       </div>
     </div>
   );
@@ -452,7 +453,7 @@ function LoginPage() {
           <h1 className="text-2xl font-light tracking-tight text-white"><span className="text-neutral-500">Abayili</span> Holdings</h1>
           <p className="text-neutral-500 text-sm mt-2">Connectez-vous pour accéder à votre espace</p>
         </div>
-        <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 p-8">
+        <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 p-6 sm:p-8">
           {(error || localError) && <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4 text-red-400 text-sm">{error || localError}</div>}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div><label className="text-xs text-neutral-500 uppercase tracking-wider mb-2 block">Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 bg-neutral-800/50 border border-neutral-700/50 rounded-lg focus:outline-none focus:border-neutral-600 text-white" placeholder="votre@email.com" required /></div>
@@ -521,7 +522,7 @@ function YearlyTotalView({ company }) {
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <MetricCard
           label={`Total Entrées ${currentYear}`}
           value={`${totalRevenue.toLocaleString('fr-FR')} FCFA`}
@@ -644,14 +645,14 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
   if (loading) return <div className="p-8 flex items-center justify-center min-h-[400px]"><Icons.Loader size={32} className="text-neutral-400" /></div>;
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header avec sélecteur de mois */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
         <div>
-          <h2 className="text-2xl font-light tracking-tight">{company.name}</h2>
+          <h2 className="text-xl sm:text-2xl font-light tracking-tight">{company.name}</h2>
           <p className="text-neutral-500 text-sm mt-1">{company.description}</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           <MonthSelector
             selectedMonth={selectedMonth}
             onChange={onMonthChange}
@@ -672,7 +673,7 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
       ) : (
         <>
       {/* Métriques principales */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 sm:mb-8">
         <MetricCard label={`Revenus - ${formatMonthDisplay(selectedMonth)}`} value={`${(metrics.totalRevenue || 0).toLocaleString('fr-FR')} FCFA`} icon="ArrowUpRight" onClick={() => onNavigate('transactions')} />
         <MetricCard label={`Dépenses - ${formatMonthDisplay(selectedMonth)}`} value={`${(metrics.totalExpenses || 0).toLocaleString('fr-FR')} FCFA`} icon="ArrowDownRight" onClick={() => onNavigate('transactions')} />
         <MetricCard label="Résultat Net" value={`${(metrics.netResult || 0) >= 0 ? '+' : ''}${(metrics.netResult || 0).toLocaleString('fr-FR')} FCFA`} positive={(metrics.netResult || 0) >= 0} icon="TrendingUp" />
@@ -680,9 +681,9 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
       </div>
 
       {/* Graphiques */}
-      <div className="grid grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 sm:mb-8">
         {/* Graphique Répartition par catégorie */}
-        <div className="col-span-2 bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50">
+        <div className="lg:col-span-2 bg-neutral-900/50 rounded-2xl p-4 sm:p-6 border border-neutral-800/50">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Répartition par Catégorie - {formatMonthDisplay(selectedMonth)}</h3>
             <Icons.PieChart size={16} className="text-neutral-500" />
@@ -691,22 +692,22 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
         </div>
 
         {/* Cercles de progression */}
-        <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50">
+        <div className="bg-neutral-900/50 rounded-2xl p-4 sm:p-6 border border-neutral-800/50">
           <h3 className="text-sm text-neutral-400 uppercase tracking-wider mb-6">Vue d'ensemble</h3>
-          <div className="flex flex-col items-center gap-6">
-            <CircularProgress 
-              value={budgetStats.totalSpent} 
-              max={budgetStats.totalBudget || 1} 
-              size={90} 
+          <div className="flex flex-row justify-center sm:flex-col items-center gap-6">
+            <CircularProgress
+              value={budgetStats.totalSpent}
+              max={budgetStats.totalBudget || 1}
+              size={90}
               strokeWidth={8}
               label="Budget"
               sublabel={`${budgetStats.totalSpent.toLocaleString('fr-FR')} / ${budgetStats.totalBudget.toLocaleString('fr-FR')}`}
               color={budgetUsage > 80 ? '#f59e0b' : '#10b981'}
             />
-            <CircularProgress 
-              value={objectivesStats.completed} 
-              max={objectivesStats.total || 1} 
-              size={90} 
+            <CircularProgress
+              value={objectivesStats.completed}
+              max={objectivesStats.total || 1}
+              size={90}
               strokeWidth={8}
               label="Objectifs"
               sublabel={`${objectivesStats.completed} / ${objectivesStats.total} terminés`}
@@ -717,7 +718,7 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
       </div>
 
       {/* Section inférieure */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Budgets */}
         <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50">
           <div className="flex items-center justify-between mb-4">
@@ -920,13 +921,13 @@ function TransactionsPage({ company, selectedMonth, onMonthChange }) {
   if (loading) return <div className="p-8 flex items-center justify-center min-h-[400px]"><Icons.Loader size={32} className="text-neutral-400" /></div>;
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
         <div>
-          <h2 className="text-2xl font-light tracking-tight">Transactions</h2>
+          <h2 className="text-xl sm:text-2xl font-light tracking-tight">Transactions</h2>
           <p className="text-neutral-500 text-sm mt-1">{company.name}</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           <MonthSelector selectedMonth={selectedMonth} onChange={onMonthChange} />
           <button onClick={openCreateModal} className="flex items-center gap-2 px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm hover:bg-neutral-200 transition-colors">
             <Icons.Plus size={16} />Nouvelle Transaction
@@ -936,16 +937,19 @@ function TransactionsPage({ company, selectedMonth, onMonthChange }) {
 
       {transactions.length === 0 ? (
         <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50">
-          <EmptyState 
-            icon={Icons.Receipt} 
-            title="Aucune transaction" 
-            description={`Aucune transaction pour ${formatMonthDisplay(selectedMonth)}. Ajoutez votre première transaction.`} 
-            action={openCreateModal} 
-            actionLabel="Ajouter" 
+          <EmptyState
+            icon={Icons.Receipt}
+            title="Aucune transaction"
+            description={`Aucune transaction pour ${formatMonthDisplay(selectedMonth)}. Ajoutez votre première transaction.`}
+            action={openCreateModal}
+            actionLabel="Ajouter"
           />
         </div>
       ) : (
-        <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 overflow-hidden">
+        <>
+        {/* Vue tableau (tablette / desktop) */}
+        <div className="hidden md:block bg-neutral-900/50 rounded-2xl border border-neutral-800/50 overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-neutral-800">
@@ -1001,7 +1005,53 @@ function TransactionsPage({ company, selectedMonth, onMonthChange }) {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
+
+        {/* Vue cartes (mobile) */}
+        <div className="md:hidden space-y-3">
+          {transactions.map(t => (
+            <div key={t.id} className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm text-white truncate">{t.description}</p>
+                  <p className="text-xs text-neutral-500 mt-0.5">{t.date} • {t.category}</p>
+                </div>
+                <span className={`text-sm font-medium flex-shrink-0 ${t.type === 'revenue' ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {t.type === 'revenue' ? '+' : '-'}{(t.amount || 0).toLocaleString('fr-FR')} FCFA
+                </span>
+              </div>
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-800/50">
+                <span className={`px-2 py-1 rounded-full text-xs ${t.status === 'validated' ? 'bg-emerald-500/20 text-emerald-400' : t.status === 'rejected' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                  {t.status === 'validated' ? 'Validé' : t.status === 'rejected' ? 'Rejeté' : 'En attente'}
+                </span>
+                <div className="flex items-center gap-2">
+                  {canValidate && t.status === 'pending' && (
+                    <>
+                      <button onClick={() => handleValidate(t.id, 'validated')} className="p-1.5 bg-emerald-500/20 text-emerald-400 rounded hover:bg-emerald-500/30 transition-colors" title="Valider">
+                        <Icons.Check size={14} />
+                      </button>
+                      <button onClick={() => handleValidate(t.id, 'rejected')} className="p-1.5 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 transition-colors" title="Rejeter">
+                        <Icons.X size={14} />
+                      </button>
+                    </>
+                  )}
+                  {canValidate && (
+                    <>
+                      <button onClick={() => openEditModal(t)} className="p-1.5 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30 transition-colors" title="Modifier">
+                        <Icons.Edit size={14} />
+                      </button>
+                      <button onClick={() => setShowDeleteConfirm(t)} className="p-1.5 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 transition-colors" title="Supprimer">
+                        <Icons.Trash size={14} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        </>
       )}
 
       {/* Modal Création/Modification */}
@@ -1197,16 +1247,16 @@ function BudgetsPage({ company, selectedMonth, onMonthChange }) {
   if (loading) return <div className="p-8 flex items-center justify-center min-h-[400px]"><Icons.Loader size={32} className="text-neutral-400" /></div>;
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
         <div>
-          <h2 className="text-2xl font-light tracking-tight">Budgets</h2>
+          <h2 className="text-xl sm:text-2xl font-light tracking-tight">Budgets</h2>
           <p className="text-neutral-500 text-sm mt-1">{company.name}</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           <MonthSelector selectedMonth={selectedMonth} onChange={onMonthChange} availableMonths={availableMonths} />
           {canManage && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button onClick={openRenewModal} className="flex items-center gap-2 px-4 py-2 bg-neutral-800 text-white rounded-lg text-sm hover:bg-neutral-700 transition-colors" title="Renouveler les budgets pour un nouveau mois">
                 <Icons.RefreshCw size={16} />Renouveler
               </button>
@@ -1237,7 +1287,7 @@ function BudgetsPage({ company, selectedMonth, onMonthChange }) {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {budgets.map(budget => {
             const percentage = budget.amount > 0 ? (budget.spent / budget.amount) * 100 : 0;
             const isOver = percentage > 100; 
@@ -1457,10 +1507,10 @@ function ObjectivesPage({ company }) {
   if (loading) return <div className="p-8 flex items-center justify-center min-h-[400px]"><Icons.Loader size={32} className="text-neutral-400" /></div>;
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div><h2 className="text-2xl font-light tracking-tight">Objectifs</h2><p className="text-neutral-500 text-sm mt-1">{company.name}</p></div>
-        {canCreateObjective && <button onClick={() => setShowObjectiveModal(true)} className="flex items-center gap-2 px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm hover:bg-neutral-200 transition-colors"><Icons.Plus size={16} />Nouvel Objectif</button>}
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+        <div><h2 className="text-xl sm:text-2xl font-light tracking-tight">Objectifs</h2><p className="text-neutral-500 text-sm mt-1">{company.name}</p></div>
+        {canCreateObjective && <button onClick={() => setShowObjectiveModal(true)} className="flex items-center gap-2 px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm hover:bg-neutral-200 transition-colors self-start"><Icons.Plus size={16} />Nouvel Objectif</button>}
       </div>
 
       {objectives.length === 0 ? (
@@ -1476,29 +1526,29 @@ function ObjectivesPage({ company }) {
             const progress = steps.length > 0 ? (completedSteps / steps.length) * 100 : 0;
             return (
               <div key={obj.id} className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 overflow-hidden">
-                <div className="p-6 cursor-pointer" onClick={() => toggleExpand(obj.id)}>
+                <div className="p-4 sm:p-6 cursor-pointer" onClick={() => toggleExpand(obj.id)}>
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-2 flex-wrap">
                         <h3 className="text-lg font-medium text-white">{obj.title}</h3>
                         <span className={`px-2 py-0.5 rounded-full text-xs ${obj.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : obj.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' : 'bg-neutral-500/20 text-neutral-400'}`}>
                           {obj.status === 'completed' ? 'Terminé' : obj.status === 'in_progress' ? 'En cours' : 'À faire'}
                         </span>
                       </div>
                       {obj.description && <p className="text-sm text-neutral-400 mb-3">{obj.description}</p>}
-                      <div className="flex items-center gap-4">
-                        <div className="flex-1 max-w-xs">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                        <div className="flex-1 min-w-[80px] max-w-xs">
                           <MiniProgressBar value={completedSteps} max={steps.length || 1} color="bg-blue-500" showLabel={false} />
                         </div>
                         <span className="text-xs text-neutral-400">{completedSteps}/{steps.length} étapes</span>
                         {obj.deadline && <span className="text-xs text-neutral-500">Échéance: {obj.deadline}</span>}
                       </div>
                     </div>
-                    <div className="ml-4">{isExpanded ? <Icons.ChevronUp size={20} className="text-neutral-400" /> : <Icons.ChevronDown size={20} className="text-neutral-400" />}</div>
+                    <div className="ml-4 flex-shrink-0">{isExpanded ? <Icons.ChevronUp size={20} className="text-neutral-400" /> : <Icons.ChevronDown size={20} className="text-neutral-400" />}</div>
                   </div>
                 </div>
                 {isExpanded && (
-                  <div className="border-t border-neutral-800/50 p-6 bg-neutral-900/30">
+                  <div className="border-t border-neutral-800/50 p-4 sm:p-6 bg-neutral-900/30">
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="text-sm text-neutral-400 uppercase tracking-wider">Étapes</h4>
                       <button onClick={() => openStepModal(obj)} className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"><Icons.Plus size={14} />Ajouter</button>
@@ -1511,9 +1561,9 @@ function ObjectivesPage({ company }) {
                           const statusConfig = STEP_STATUSES.find(s => s.id === step.status) || STEP_STATUSES[0];
                           return (
                             <div key={step.id} className="bg-neutral-800/30 rounded-lg p-4">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
+                              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                                     <div className={`w-2 h-2 rounded-full ${statusConfig.dot}`}></div>
                                     <span className="text-sm text-white">{step.title}</span>
                                     <span className={`px-2 py-0.5 rounded text-[10px] ${statusConfig.color}`}>{statusConfig.label}</span>
@@ -1530,7 +1580,7 @@ function ObjectivesPage({ company }) {
                                     </div>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-2 ml-4">
+                                <div className="flex items-center gap-2 sm:ml-4">
                                   <select value={step.status} onChange={(e) => handleUpdateStepStatus(obj.id, step.id, e.target.value)} className="text-xs bg-neutral-700/50 border border-neutral-600/50 rounded px-2 py-1 text-white">
                                     {STEP_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                                   </select>
@@ -1592,6 +1642,7 @@ function MainLayout() {
   const [activeCompany, setActiveCompany] = useState('abayili_invest');
   const [activeView, setActiveView] = useState('dashboard');
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const company = COMPANIES[activeCompany];
   const userRole = getUserRole();
@@ -1612,21 +1663,33 @@ function MainLayout() {
   const handleCompanyChange = (companyId) => {
     setActiveCompany(companyId);
     setSelectedMonth(getCurrentMonth());
+    setMobileMenuOpen(false);
+  };
+
+  const handleViewChange = (viewId) => {
+    setActiveView(viewId);
+    setMobileMenuOpen(false);
   };
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 font-light">
       <header className="border-b border-neutral-800/50 bg-neutral-950/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-[1600px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <h1 className="text-xl tracking-tight font-normal"><span className="text-neutral-500">Abayili</span><span className="text-white ml-1">Holdings</span></h1>
-              <div className="h-6 w-px bg-neutral-800"></div>
-              <span className="text-xs text-neutral-500 tracking-wider uppercase">Gestion d'Entreprise</span>
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 sm:gap-6 min-w-0">
+              <button onClick={() => setMobileMenuOpen(true)} className="p-2 -ml-2 hover:bg-neutral-800 rounded-lg transition-colors text-neutral-400 hover:text-white lg:hidden" aria-label="Ouvrir le menu">
+                <Icons.Menu size={20} />
+              </button>
+              <h1 className="text-lg sm:text-xl tracking-tight font-normal truncate"><span className="text-neutral-500">Abayili</span><span className="text-white ml-1">Holdings</span></h1>
+              <div className="h-6 w-px bg-neutral-800 hidden md:block"></div>
+              <span className="text-xs text-neutral-500 tracking-wider uppercase hidden md:inline">Gestion d'Entreprise</span>
             </div>
-            <div className="flex items-center gap-4">
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs ${userRole?.color || 'bg-neutral-500/10 text-neutral-400'}`}>
+            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+              <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs ${userRole?.color || 'bg-neutral-500/10 text-neutral-400'}`}>
                 <Icons.User size={14} />{userData?.name || 'Utilisateur'} - {userRole?.name || 'Collaborateur'}
+              </div>
+              <div className={`flex sm:hidden items-center justify-center w-8 h-8 rounded-full ${userRole?.color || 'bg-neutral-500/10 text-neutral-400'}`} title={`${userData?.name || 'Utilisateur'} - ${userRole?.name || 'Collaborateur'}`}>
+                <Icons.User size={14} />
               </div>
               <button onClick={signOut} className="p-2 hover:bg-neutral-800 rounded-lg transition-colors text-neutral-400 hover:text-white"><Icons.LogOut size={18} /></button>
             </div>
@@ -1634,12 +1697,23 @@ function MainLayout() {
         </div>
       </header>
       <div className="flex">
-        <aside className="w-72 min-h-[calc(100vh-73px)] border-r border-neutral-800/50 bg-neutral-900/30">
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
+        )}
+        <aside className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-neutral-900 overflow-y-auto transform transition-transform duration-300 ease-in-out
+          lg:relative lg:z-auto lg:translate-x-0 lg:w-72 lg:min-h-[calc(100vh-73px)] lg:border-r lg:border-neutral-800/50 lg:bg-neutral-900/30
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <div className="flex items-center justify-between p-4 border-b border-neutral-800/50 lg:hidden">
+            <span className="text-sm text-white">Menu</span>
+            <button onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-neutral-800 rounded-lg transition-colors text-neutral-400 hover:text-white" aria-label="Fermer le menu">
+              <Icons.X size={18} />
+            </button>
+          </div>
           <div className="p-4 border-b border-neutral-800/50">
             <p className="text-[10px] text-neutral-500 uppercase tracking-widest mb-3">Entreprise</p>
             <div className="space-y-1">
               {accessibleCompanies.map(comp => {
-                const CompIcon = Icons[comp.icon] || Icons.Building2; 
+                const CompIcon = Icons[comp.icon] || Icons.Building2;
                 const isActive = comp.id === activeCompany;
                 return (
                   <button key={comp.id} onClick={() => handleCompanyChange(comp.id)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive ? 'bg-white/5 text-white' : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.02]'}`}>
@@ -1660,7 +1734,7 @@ function MainLayout() {
               {navItems.map(item => {
                 const isActive = item.id === activeView;
                 return (
-                  <button key={item.id} onClick={() => setActiveView(item.id)} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? 'bg-white text-neutral-900' : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.02]'}`}>
+                  <button key={item.id} onClick={() => handleViewChange(item.id)} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? 'bg-white text-neutral-900' : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.02]'}`}>
                     <item.Icon size={16} />
                     <span className="text-sm">{item.label}</span>
                   </button>
@@ -1669,7 +1743,7 @@ function MainLayout() {
             </div>
           </nav>
         </aside>
-        <main className="flex-1 min-h-[calc(100vh-73px)] overflow-auto">
+        <main className="flex-1 min-w-0 min-h-[calc(100vh-73px)] overflow-auto">
           {activeView === 'dashboard' && <DashboardPage company={company} onNavigate={setActiveView} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />}
           {activeView === 'transactions' && <TransactionsPage company={company} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />}
           {activeView === 'budgets' && <BudgetsPage company={company} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />}
