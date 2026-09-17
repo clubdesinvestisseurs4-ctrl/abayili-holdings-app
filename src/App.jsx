@@ -45,7 +45,7 @@ const Icons = {
 // ==================== COMPANIES CONFIG ====================
 const COMPANIES = {
   abayili_invest: { id: 'abayili_invest', name: 'Abayili Investissement', shortName: 'AI', description: 'Société de Capital-Risque', icon: 'Building2',
-    departments: ['abayili_invest_rc', 'abayili_invest_rc_trading', 'abayili_invest_fcp', 'abayili_invest_rta', 'abayili_invest_rpp_c1', 'abayili_invest_rpp_c2'],
+    departments: ['abayili_invest_rc', 'abayili_invest_rc_trading', 'abayili_invest_fcp', 'abayili_invest_rta', 'abayili_invest_rpp_c1'],
     revenueCategories: [{ id: 'commissions', name: 'Commissions', icon: '💰' }, { id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
     expenseCategories: [{ id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '🏢' }, { id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏢' }, { id: 'charges_fixes_donations', name: 'Charges Fixes Donations', icon: '🏢' }, { id: 'charges_fixes_frais_opérationnels', name: 'Charges Fixes Frais Opérationnels', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
   },
@@ -68,12 +68,7 @@ const COMPANIES = {
     revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
     expenseCategories: [{ id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏦' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
   },
-  // Réseau Parieurs Pro a lui aussi deux comptes/bankrolls distincts.
   abayili_invest_rpp_c1: { id: 'abayili_invest_rpp_c1', parentId: 'abayili_invest', name: 'Réseau Parieurs Pro — Compte 1', shortName: 'RPP C1', description: 'Abayili Investissement — Département Capital Risque', icon: 'Target',
-    revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
-    expenseCategories: [{ id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏦' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }]
-  },
-  abayili_invest_rpp_c2: { id: 'abayili_invest_rpp_c2', parentId: 'abayili_invest', name: 'Réseau Parieurs Pro — Compte 2', shortName: 'RPP C2', description: 'Abayili Investissement — Département Capital Risque', icon: 'Target',
     revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
     expenseCategories: [{ id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏦' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }]
   },
