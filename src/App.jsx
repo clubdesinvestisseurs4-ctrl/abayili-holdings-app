@@ -863,20 +863,24 @@ function TransactionsPage({ company, selectedMonth, onMonthChange }) {
   const [formData, setFormData] = useState({ type: 'revenue', amount: '', category: '', description: '', date: new Date().toISOString().split('T')[0] });
   const [submitting, setSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [loadError, setLoadError] = useState(null);
   const canValidate = userData?.role === 'admin_treasury';
 
   useEffect(() => { loadTransactions(); }, [company.id, selectedMonth]);
-  
-  const loadTransactions = async () => { 
-    try { 
-      setLoading(true); 
-      const res = await TransactionAPI.getAll(company.id, { month: selectedMonth }); 
-      setTransactions(res.data || []); 
-    } catch (err) { 
-      console.error('Erreur:', err); 
-    } finally { 
-      setLoading(false); 
-    } 
+
+  const loadTransactions = async () => {
+    try {
+      setLoading(true);
+      setLoadError(null);
+      const res = await TransactionAPI.getAll(company.id, { month: selectedMonth });
+      setTransactions(res.data || []);
+    } catch (err) {
+      console.error('Erreur:', err);
+      setLoadError(err.response ? `HTTP ${err.response.status} — ${err.response.data?.error || err.message}` : (err.code || err.message || 'erreur réseau inconnue'));
+      setTransactions([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetForm = () => {
@@ -964,13 +968,19 @@ function TransactionsPage({ company, selectedMonth, onMonthChange }) {
         </div>
       </div>
 
+      {loadError && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 mb-4 text-red-400 text-sm">
+          <Icons.AlertTriangle size={14} className="inline mr-1.5" />
+          Échec du chargement ({loadError}) — ceci n'est pas "aucune transaction", le chargement a réellement échoué.
+        </div>
+      )}
       {transactions.length === 0 ? (
         <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50">
           <EmptyState
             icon={Icons.Receipt}
-            title="Aucune transaction"
-            description={`Aucune transaction pour ${formatMonthDisplay(selectedMonth)}. Ajoutez votre première transaction.`}
-            action={openCreateModal}
+            title={loadError ? 'Chargement échoué' : 'Aucune transaction'}
+            description={loadError ? 'Vérifie ta connexion et recharge la page.' : `Aucune transaction pour ${formatMonthDisplay(selectedMonth)}. Ajoutez votre première transaction.`}
+            action={loadError ? null : openCreateModal}
             actionLabel="Ajouter"
           />
         </div>
@@ -1825,7 +1835,7 @@ function PortfolioGlobalPage() {
 
 // ==================== MAIN LAYOUT ====================
 function MainLayout() {
-  const { userData, signOut } = useAuth();
+  const { userData, userDataError, signOut } = useAuth();
   const getUserRole = () => {
     const roles = { admin_treasury: { name: 'Directeur Trésorerie', color: 'bg-purple-500/10 text-purple-400' }, project_manager: { name: 'Chef de Projet', color: 'bg-blue-500/10 text-blue-400' }, collaborator: { name: 'Collaborateur', color: 'bg-neutral-500/10 text-neutral-400' } };
     return roles[userData?.role] || roles.collaborator;
@@ -1875,6 +1885,12 @@ function MainLayout() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 font-light">
+      {userDataError && (
+        <div className="bg-red-500/10 border-b border-red-500/30 px-4 py-2 text-center text-xs text-red-400 sticky top-0 z-[60]">
+          <Icons.AlertTriangle size={12} className="inline mr-1.5" />
+          Profil non chargé ({userDataError}) — rôle et accès affichés par défaut, pas les vrais. Recharge la page ; si ça persiste, transmets ce message.
+        </div>
+      )}
       <header className="border-b border-neutral-800/50 bg-neutral-950/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between gap-2">

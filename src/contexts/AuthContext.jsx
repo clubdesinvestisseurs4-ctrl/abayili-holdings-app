@@ -38,6 +38,12 @@ export function AuthProvider({ children }) {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Erreur réelle du chargement du profil (companies/role) - distincte de
+  // `error` (erreurs de connexion). Affichée dans l'UI (MainLayout) pour que
+  // l'utilisateur puisse la voir/relayer sans avoir besoin de la console
+  // navigateur (ex: sur mobile) - avant, l'échec était silencieux, masqué
+  // par un repli automatique sur le rôle "collaborator".
+  const [userDataError, setUserDataError] = useState(null);
 
   // Écouter les changements d'authentification
   useEffect(() => {
@@ -49,9 +55,16 @@ export function AuthProvider({ children }) {
           // Récupérer les données utilisateur depuis le backend
           const response = await api.get(`/users/${firebaseUser.uid}`);
           setUserData(response.data);
+          setUserDataError(null);
         } catch (err) {
-          console.error('Erreur chargement userData:', err);
-          // Mode fallback - données minimales
+          const detail = err.response
+            ? `HTTP ${err.response.status} — ${err.response.data?.error || err.message}`
+            : (err.code || err.message || 'erreur réseau inconnue');
+          console.error('Erreur chargement userData:', detail, err);
+          setUserDataError(detail);
+          // Mode fallback - données minimales, pour ne pas bloquer l'app,
+          // mais userDataError reste affiché pour signaler que ce n'est pas
+          // le vrai rôle/les vrais accès de l'utilisateur.
           setUserData({
             uid: firebaseUser.uid,
             email: firebaseUser.email,
@@ -63,6 +76,7 @@ export function AuthProvider({ children }) {
       } else {
         setUser(null);
         setUserData(null);
+        setUserDataError(null);
       }
       setLoading(false);
     });
@@ -133,6 +147,7 @@ export function AuthProvider({ children }) {
   const value = {
     user,
     userData,
+    userDataError,
     loading,
     error,
     signIn,
