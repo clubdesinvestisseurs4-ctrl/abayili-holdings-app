@@ -1653,6 +1653,14 @@ function ObjectivesPage({ company }) {
 // Réseau Cryptos/FCP/RTA/RPP) : trésorerie cumulée depuis le début (toutes
 // transactions validées, pas de filtre de mois) pour répondre à "où est le
 // cash, tous réseaux confondus".
+//
+// Réconciliation : en plus du calcul fait depuis les transactions de l'app,
+// affiche un chiffre de référence indépendant (lu directement dans les
+// fichiers Excel/Drive de l'utilisateur, alimenté manuellement pour l'instant
+// via AnalyticsAPI.getReferenceCash) pour repérer un écart entre les deux
+// sources plutôt que de vérifier l'app contre elle-même.
+const REFERENCE_TOLERANCE_FCFA = 100;
+
 function PortfolioGlobalPage({ company }) {
   const [loading, setLoading] = useState(true);
   const [entityStats, setEntityStats] = useState([]);
@@ -1665,15 +1673,23 @@ function PortfolioGlobalPage({ company }) {
       const entityIds = [company.id, ...(company.departments || [])];
       const results = await Promise.all(
         entityIds.map(async (id) => {
+          let revenue = 0, expense = 0;
           try {
             const res = await TransactionAPI.getAll(id);
             const txs = (res.data || []).filter(t => t.status === 'validated');
-            const revenue = txs.filter(t => t.type === 'revenue').reduce((s, t) => s + (t.amount || 0), 0);
-            const expense = txs.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
-            return { id, name: COMPANIES[id]?.name || id, revenue, expense, cash: revenue - expense };
-          } catch {
-            return { id, name: COMPANIES[id]?.name || id, revenue: 0, expense: 0, cash: 0 };
-          }
+            revenue = txs.filter(t => t.type === 'revenue').reduce((s, t) => s + (t.amount || 0), 0);
+            expense = txs.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
+          } catch { /* garde revenue/expense à 0 si l'entité n'a pas encore de transactions */ }
+
+          let reference = null;
+          try {
+            const refRes = await AnalyticsAPI.getReferenceCash(id);
+            reference = refRes.data || null;
+          } catch { /* pas de référence renseignée pour cette entité */ }
+
+          const cash = revenue - expense;
+          const ecart = reference ? cash - reference.cash : null;
+          return { id, name: COMPANIES[id]?.name || id, revenue, expense, cash, reference, ecart };
         })
       );
       setEntityStats(results);
@@ -1687,6 +1703,8 @@ function PortfolioGlobalPage({ company }) {
   const totalCash = entityStats.reduce((s, e) => s + e.cash, 0);
   const totalRevenue = entityStats.reduce((s, e) => s + e.revenue, 0);
   const totalExpense = entityStats.reduce((s, e) => s + e.expense, 0);
+  const entitiesWithReference = entityStats.filter(e => e.reference);
+  const totalReference = entitiesWithReference.reduce((s, e) => s + e.reference.cash, 0);
   const donutData = entityStats.filter(e => e.cash > 0).map(e => ({ name: e.name, value: e.cash }));
 
   if (loading) return (
@@ -1702,8 +1720,14 @@ function PortfolioGlobalPage({ company }) {
         <p className="text-neutral-500 text-sm mt-1">{company.name} — vue d'ensemble tous départements (trésorerie cumulée depuis le début)</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <MetricCard label="Trésorerie Totale du Portefeuille" value={`${totalCash >= 0 ? '+' : ''}${totalCash.toLocaleString('fr-FR')} FCFA`} positive={totalCash >= 0} icon="PiggyBank" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <MetricCard label="Trésorerie Calculée (app)" value={`${totalCash >= 0 ? '+' : ''}${totalCash.toLocaleString('fr-FR')} FCFA`} positive={totalCash >= 0} icon="PiggyBank" />
+        <MetricCard
+          label={`Trésorerie de Référence (Excel)${entitiesWithReference.length < entityStats.length ? ` · ${entitiesWithReference.length}/${entityStats.length}` : ''}`}
+          value={entitiesWithReference.length > 0 ? `${totalReference >= 0 ? '+' : ''}${totalReference.toLocaleString('fr-FR')} FCFA` : 'Non renseigné'}
+          positive={entitiesWithReference.length > 0 ? totalReference >= 0 : undefined}
+          icon="FileText"
+        />
         <MetricCard label="Revenus Cumulés (tous départements)" value={`${totalRevenue.toLocaleString('fr-FR')} FCFA`} icon="ArrowUpRight" />
         <MetricCard label="Dépenses Cumulées (tous départements)" value={`${totalExpense.toLocaleString('fr-FR')} FCFA`} icon="ArrowDownRight" />
       </div>
@@ -1719,30 +1743,48 @@ function PortfolioGlobalPage({ company }) {
 
         <div className="lg:col-span-2 bg-neutral-900/50 rounded-2xl border border-neutral-800/50 overflow-hidden">
           <div className="p-6 border-b border-neutral-800/50">
-            <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Détail par entité</h3>
+            <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Détail par entité — réconciliation app / Excel</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-neutral-800/50">
                   <th className="text-left px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Entité</th>
-                  <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Revenus</th>
-                  <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Dépenses</th>
-                  <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Trésorerie</th>
+                  <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Trésorerie (app)</th>
+                  <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Référence (Excel)</th>
+                  <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Écart</th>
                 </tr>
               </thead>
               <tbody>
-                {entityStats.map((e, i) => (
-                  <tr key={e.id} className={`border-b border-neutral-800/30 last:border-0 ${i % 2 !== 0 ? 'bg-neutral-900/20' : ''}`}>
-                    <td className="px-6 py-4 text-sm text-white">{e.name}</td>
-                    <td className="px-6 py-4 text-sm text-right text-emerald-400">{e.revenue.toLocaleString('fr-FR')} FCFA</td>
-                    <td className="px-6 py-4 text-sm text-right text-red-400">{e.expense.toLocaleString('fr-FR')} FCFA</td>
-                    <td className={`px-6 py-4 text-sm text-right font-medium ${e.cash >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{e.cash >= 0 ? '+' : ''}{e.cash.toLocaleString('fr-FR')} FCFA</td>
-                  </tr>
-                ))}
+                {entityStats.map((e, i) => {
+                  const hasRef = !!e.reference;
+                  const isOk = hasRef && Math.abs(e.ecart) <= REFERENCE_TOLERANCE_FCFA;
+                  return (
+                    <tr key={e.id} className={`border-b border-neutral-800/30 last:border-0 ${i % 2 !== 0 ? 'bg-neutral-900/20' : ''}`}>
+                      <td className="px-6 py-4 text-sm text-white">{e.name}</td>
+                      <td className={`px-6 py-4 text-sm text-right ${e.cash >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{e.cash >= 0 ? '+' : ''}{e.cash.toLocaleString('fr-FR')} FCFA</td>
+                      <td className="px-6 py-4 text-sm text-right text-neutral-400">
+                        {hasRef ? `${e.reference.cash.toLocaleString('fr-FR')} FCFA` : <span className="text-neutral-600 italic">Non renseigné</span>}
+                        {hasRef && e.reference.asOf && <div className="text-[10px] text-neutral-600 mt-0.5">au {e.reference.asOf}</div>}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-right">
+                        {hasRef ? (
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${isOk ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                            {e.ecart >= 0 ? '+' : ''}{e.ecart.toLocaleString('fr-FR')} FCFA
+                          </span>
+                        ) : <span className="text-neutral-600">—</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
+          {entitiesWithReference.length > 0 && (
+            <div className="px-6 py-3 border-t border-neutral-800/50 text-[11px] text-neutral-500">
+              Écart ≤ {REFERENCE_TOLERANCE_FCFA} FCFA considéré comme concordant (arrondis). La référence est mise à jour manuellement depuis les fichiers Excel du Drive.
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -272,6 +272,13 @@ export const AnalyticsAPI = {
    */
   getMonthlySummary: (companyId, year = new Date().getFullYear()) =>
     api.get(`/analytics/${companyId}/monthly-summary?year=${year}`),
+
+  /**
+   * Récupérer le chiffre de trésorerie de référence (source externe, Excel/Drive)
+   * pour réconciliation avec les transactions de l'app. Retourne null si non renseigné.
+   * @param {string} companyId - ID de l'entreprise
+   */
+  getReferenceCash: (companyId) => api.get(`/analytics/${companyId}/reference`),
 };
 
 // ==================== USERS API ====================
