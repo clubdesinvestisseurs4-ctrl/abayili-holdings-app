@@ -47,17 +47,15 @@ api.interceptors.request.use(async (config) => {
 // Intercepteur pour gérer les erreurs, avec nouvelle tentative automatique.
 //
 // Ancien comportement : rechargement forcé (window.location.href='/login') sur
-// TOUTE réponse 401. Si un seul endpoint renvoyait 401 alors que la session
-// Firebase restait valide (jeton pas encore propagé, backend Render qui se
-// réveille après une période d'inactivité - jusqu'à ~30-50s de délai, etc.),
-// ça provoquait une boucle infinie de rechargements ("la page de login
-// clignote sans arrêt"). Ce rechargement forcé a été retiré - mais il servait
-// accidentellement de mécanisme de nouvelle tentative (un reload relançait
-// tous les appels). Sans lui, un échec ponctuel au réveil du backend laissait
-// des écrans vides (transactions manquantes, rôle retombé sur "collaborateur"
-// par défaut) sans jamais réessayer. On réessaie donc explicitement ici,
-// jusqu'à 2 fois avec un court délai, avant d'abandonner pour de bon.
-const RETRYABLE_STATUSES = [401, 502, 503, 504];
+// TOUTE réponse 401. Ça provoquait une boucle infinie ("la page de login
+// clignote sans arrêt") quand la session Firebase restait valide. Ce
+// rechargement forcé a été retiré, remplacé par une nouvelle tentative
+// explicite - MAIS 401 est volontairement exclu de la liste : diagnostiqué
+// le 2026-09-17, un 401 sur ce backend peut aussi venir d'un quota Firestore
+// épuisé (RESOURCE_EXHAUSTED), auquel cas réessayer ne fait qu'aggraver
+// l'épuisement du quota sans jamais réussir. Seules les pannes réseau/
+// serveur réellement transitoires (timeout, 502/503/504) sont réessayées.
+const RETRYABLE_STATUSES = [502, 503, 504];
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1500;
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
