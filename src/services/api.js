@@ -42,12 +42,20 @@ api.interceptors.request.use(async (config) => {
 });
 
 // Intercepteur pour gérer les erreurs
+// Ancien comportement : rechargement forcé (window.location.href='/login') sur
+// TOUTE réponse 401, sans condition. Si un seul endpoint renvoyait 401 alors
+// que la session Firebase restait valide (jeton pas encore propagé, erreur
+// ponctuelle côté backend, etc.), ça provoquait une boucle infinie : reload
+// vers /login -> session Firebase toujours valide -> redirection automatique
+// vers / -> même appel refait -> 401 à nouveau -> reload... (vu comme "la
+// page de login clignote sans arrêt"). On ne force plus de rechargement ici :
+// si l'utilisateur n'a vraiment plus de session, ProtectedRoute s'en charge
+// déjà nativement (isAuthenticated devient false) sans reload brutal.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expiré ou invalide
-      window.location.href = '/login';
+      console.error('Requête non autorisée (401):', error.config?.url);
     }
     return Promise.reject(error);
   }
