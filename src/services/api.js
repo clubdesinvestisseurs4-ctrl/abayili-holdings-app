@@ -21,7 +21,10 @@ const API_BASE_URL = getApiUrl();
 // Instance Axios avec intercepteur pour le token
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  // 45s (pas 30s) : le backend Render (offre gratuite) peut se réveiller en
+  // ~30-50s après une période d'inactivité - un timeout trop court coupait
+  // la toute première requête pile pendant ce réveil.
+  timeout: 45000,
 });
 
 // Intercepteur pour ajouter le token JWT
@@ -41,21 +44,42 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Intercepteur pour gérer les erreurs
+// Intercepteur pour gérer les erreurs, avec nouvelle tentative automatique.
+//
 // Ancien comportement : rechargement forcé (window.location.href='/login') sur
-// TOUTE réponse 401, sans condition. Si un seul endpoint renvoyait 401 alors
-// que la session Firebase restait valide (jeton pas encore propagé, erreur
-// ponctuelle côté backend, etc.), ça provoquait une boucle infinie : reload
-// vers /login -> session Firebase toujours valide -> redirection automatique
-// vers / -> même appel refait -> 401 à nouveau -> reload... (vu comme "la
-// page de login clignote sans arrêt"). On ne force plus de rechargement ici :
-// si l'utilisateur n'a vraiment plus de session, ProtectedRoute s'en charge
-// déjà nativement (isAuthenticated devient false) sans reload brutal.
+// TOUTE réponse 401. Si un seul endpoint renvoyait 401 alors que la session
+// Firebase restait valide (jeton pas encore propagé, backend Render qui se
+// réveille après une période d'inactivité - jusqu'à ~30-50s de délai, etc.),
+// ça provoquait une boucle infinie de rechargements ("la page de login
+// clignote sans arrêt"). Ce rechargement forcé a été retiré - mais il servait
+// accidentellement de mécanisme de nouvelle tentative (un reload relançait
+// tous les appels). Sans lui, un échec ponctuel au réveil du backend laissait
+// des écrans vides (transactions manquantes, rôle retombé sur "collaborateur"
+// par défaut) sans jamais réessayer. On réessaie donc explicitement ici,
+// jusqu'à 2 fois avec un court délai, avant d'abandonner pour de bon.
+const RETRYABLE_STATUSES = [401, 502, 503, 504];
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1500;
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      console.error('Requête non autorisée (401):', error.config?.url);
+  async (error) => {
+    const config = error.config;
+    const status = error.response?.status;
+    const isRetryable = !status /* timeout / erreur réseau */ || RETRYABLE_STATUSES.includes(status);
+
+    if (config && isRetryable) {
+      config.__retryCount = (config.__retryCount || 0) + 1;
+      if (config.__retryCount <= MAX_RETRIES) {
+        console.warn(`Nouvelle tentative ${config.__retryCount}/${MAX_RETRIES} pour ${config.url} (${status || 'timeout/réseau'})`);
+        await wait(RETRY_DELAY_MS * config.__retryCount);
+        return api(config);
+      }
+    }
+
+    if (status === 401) {
+      console.error('Requête non autorisée (401) après nouvelles tentatives:', config?.url);
     }
     return Promise.reject(error);
   }
