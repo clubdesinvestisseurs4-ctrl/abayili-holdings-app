@@ -311,6 +311,15 @@ export const AnalyticsAPI = {
   getReferenceCash: (companyId) => api.get(`/analytics/${companyId}/reference`),
 };
 
+// ==================== PIONEX API ====================
+export const PionexAPI = {
+  /**
+   * Etat live du bot de trading en grille (Réseau Cryptos - Trading) :
+   * PnL recalculé dynamiquement à partir du prix BTC actuel.
+   */
+  getGridBotStatus: () => api.get('/pionex/grid-bot/status'),
+};
+
 // ==================== USERS API ====================
 export const UserAPI = {
   /**

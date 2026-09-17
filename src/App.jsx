@@ -628,6 +628,75 @@ function YearlyTotalView({ company }) {
 }
 
 // ==================== DASHBOARD PAGE (avec graphiques et navigation mensuelle) ====================
+// ==================== PIONEX GRID BOT WIDGET ====================
+// PnL dynamique du bot Pionex (Réseau Cryptos - Trading), recalculé côté
+// serveur à partir du prix BTC en direct à chaque chargement de la page -
+// voir routes/pionex.js pour la formule (vérifiée contre l'app Pionex).
+function PionexGridBotWidget() {
+  const [status, setStatus] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    PionexAPI.getGridBotStatus()
+      .then(res => { if (!cancelled) setStatus(res.data); })
+      .catch(err => { if (!cancelled) setError(err.response?.data?.detail || err.message); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50 mb-6 sm:mb-8 flex items-center gap-3">
+        <Icons.Loader size={18} className="text-neutral-500" />
+        <span className="text-sm text-neutral-500">Chargement du bot Pionex en direct...</span>
+      </div>
+    );
+  }
+  if (error || !status) {
+    return (
+      <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50 mb-6 sm:mb-8 text-sm text-neutral-500">
+        <Icons.AlertTriangle size={14} className="inline mr-1.5 text-amber-400" />
+        Bot Pionex non disponible pour l'instant{error ? ` (${error})` : ''}.
+      </div>
+    );
+  }
+
+  const isPositive = status.currentProfit >= 0;
+  return (
+    <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 mb-6 sm:mb-8 overflow-hidden">
+      <div className="flex items-center justify-between p-6 pb-4">
+        <div>
+          <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Bot Pionex — BTC/USDT Grille (en direct)</h3>
+          <p className="text-[11px] text-neutral-600 mt-1">Prix BTC : {status.btcPrice.toLocaleString('fr-FR')} $ — actualisé {new Date(status.fetchedAt).toLocaleTimeString('fr-FR')}</p>
+        </div>
+        <Icons.TrendingUp size={18} className="text-neutral-500" />
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-6 pb-6">
+        <div>
+          <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Investissement</p>
+          <p className="text-sm text-white">{status.investment.toFixed(2)} $</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Bénéfice courant</p>
+          <p className={`text-sm font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+            {isPositive ? '+' : ''}{status.currentProfit.toFixed(2)} $ ({isPositive ? '+' : ''}{status.currentProfitPct.toFixed(2)}%)
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Grid profit</p>
+          <p className="text-sm text-emerald-400">+{status.gridProfit.toFixed(2)} $</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Position actuelle</p>
+          <p className="text-sm text-neutral-300">{status.baseAmount.toFixed(6)} BTC + {status.quoteAmount.toFixed(2)} $</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
   const [metrics, setMetrics] = useState({ totalRevenue: 0, totalExpenses: 0, netResult: 0, pendingExpenses: 0 });
   const [transactions, setTransactions] = useState([]);
@@ -695,6 +764,8 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
           )}
         </div>
       </div>
+
+      {company.id === 'abayili_invest_rc_trading' && <PionexGridBotWidget />}
 
       {/* Vue Total Annuel */}
       {isTotal ? (
