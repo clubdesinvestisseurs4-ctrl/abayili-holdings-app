@@ -58,7 +58,7 @@ export function AuthProvider({ children }) {
           setUserDataError(null);
         } catch (err) {
           const detail = err.response
-            ? `HTTP ${err.response.status} — ${err.response.data?.error || err.message}`
+            ? `HTTP ${err.response.status} — ${err.response.data?.detail || err.response.data?.error || err.message}${err.response.data?.code ? ` (${err.response.data.code})` : ''}`
             : (err.code || err.message || 'erreur réseau inconnue');
           console.error('Erreur chargement userData:', detail, err);
           setUserDataError(detail);
