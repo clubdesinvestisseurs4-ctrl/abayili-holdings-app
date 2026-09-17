@@ -45,8 +45,25 @@ const Icons = {
 // ==================== COMPANIES CONFIG ====================
 const COMPANIES = {
   abayili_invest: { id: 'abayili_invest', name: 'Abayili Investissement', shortName: 'AI', description: 'Société de Capital-Risque', icon: 'Building2',
+    departments: ['abayili_invest_rc', 'abayili_invest_fcp', 'abayili_invest_rta', 'abayili_invest_rpp'],
     revenueCategories: [{ id: 'commissions', name: 'Commissions', icon: '💰' }, { id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
     expenseCategories: [{ id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '🏢' }, { id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏢' }, { id: 'charges_fixes_donations', name: 'Charges Fixes Donations', icon: '🏢' }, { id: 'charges_fixes_frais_opérationnels', name: 'Charges Fixes Frais Opérationnels', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
+  },
+  abayili_invest_rc: { id: 'abayili_invest_rc', parentId: 'abayili_invest', name: 'Réseau Cryptos', shortName: 'RC', description: 'Abayili Investissement — Département Capital Risque', icon: 'TrendingUp',
+    revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
+    expenseCategories: [{ id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏦' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
+  },
+  abayili_invest_fcp: { id: 'abayili_invest_fcp', parentId: 'abayili_invest', name: 'FCP', shortName: 'FCP', description: 'Abayili Investissement — Département Capital Risque', icon: 'Layers',
+    revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
+    expenseCategories: [{ id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏦' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
+  },
+  abayili_invest_rta: { id: 'abayili_invest_rta', parentId: 'abayili_invest', name: 'RTA', shortName: 'RTA', description: 'Abayili Investissement — Département Capital Risque', icon: 'BarChart3',
+    revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
+    expenseCategories: [{ id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏦' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
+  },
+  abayili_invest_rpp: { id: 'abayili_invest_rpp', parentId: 'abayili_invest', name: 'Réseau Parieurs Pro', shortName: 'RPP', description: 'Abayili Investissement — Département Capital Risque', icon: 'Target',
+    revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
+    expenseCategories: [{ id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏦' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
   },
   abayili_consulting: { id: 'abayili_consulting', name: 'Abayili Consulting', shortName: 'AC', description: 'Consulting, Formation & Conférences', icon: 'GraduationCap',
     revenueCategories: [{ id: 'formations', name: 'Ventes de Formations', icon: '📚' }, { id: 'consulting', name: 'Missions Consulting', icon: '💼' }, { id: 'conferences', name: 'Conférences', icon: '🎤' }, { id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
@@ -1631,6 +1648,107 @@ function ObjectivesPage({ company }) {
   );
 }
 
+// ==================== PORTFOLIO GLOBAL PAGE ====================
+// Vue consolidée d'un parent + ses départements (ex: Abayili Investissement +
+// Réseau Cryptos/FCP/RTA/RPP) : trésorerie cumulée depuis le début (toutes
+// transactions validées, pas de filtre de mois) pour répondre à "où est le
+// cash, tous réseaux confondus".
+function PortfolioGlobalPage({ company }) {
+  const [loading, setLoading] = useState(true);
+  const [entityStats, setEntityStats] = useState([]);
+
+  useEffect(() => { loadPortfolio(); }, [company.id]);
+
+  const loadPortfolio = async () => {
+    setLoading(true);
+    try {
+      const entityIds = [company.id, ...(company.departments || [])];
+      const results = await Promise.all(
+        entityIds.map(async (id) => {
+          try {
+            const res = await TransactionAPI.getAll(id);
+            const txs = (res.data || []).filter(t => t.status === 'validated');
+            const revenue = txs.filter(t => t.type === 'revenue').reduce((s, t) => s + (t.amount || 0), 0);
+            const expense = txs.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
+            return { id, name: COMPANIES[id]?.name || id, revenue, expense, cash: revenue - expense };
+          } catch {
+            return { id, name: COMPANIES[id]?.name || id, revenue: 0, expense: 0, cash: 0 };
+          }
+        })
+      );
+      setEntityStats(results);
+    } catch (err) {
+      console.error('Erreur chargement portefeuille global:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalCash = entityStats.reduce((s, e) => s + e.cash, 0);
+  const totalRevenue = entityStats.reduce((s, e) => s + e.revenue, 0);
+  const totalExpense = entityStats.reduce((s, e) => s + e.expense, 0);
+  const donutData = entityStats.filter(e => e.cash > 0).map(e => ({ name: e.name, value: e.cash }));
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-16">
+      <Icons.Loader size={32} className="text-neutral-400" />
+    </div>
+  );
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-light tracking-tight">Portefeuille Global</h2>
+        <p className="text-neutral-500 text-sm mt-1">{company.name} — vue d'ensemble tous départements (trésorerie cumulée depuis le début)</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <MetricCard label="Trésorerie Totale du Portefeuille" value={`${totalCash >= 0 ? '+' : ''}${totalCash.toLocaleString('fr-FR')} FCFA`} positive={totalCash >= 0} icon="PiggyBank" />
+        <MetricCard label="Revenus Cumulés (tous départements)" value={`${totalRevenue.toLocaleString('fr-FR')} FCFA`} icon="ArrowUpRight" />
+        <MetricCard label="Dépenses Cumulées (tous départements)" value={`${totalExpense.toLocaleString('fr-FR')} FCFA`} icon="ArrowDownRight" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1 bg-neutral-900/50 rounded-2xl p-4 sm:p-6 border border-neutral-800/50">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Répartition du cash</h3>
+            <Icons.PieChart size={16} className="text-neutral-500" />
+          </div>
+          <DonutChart data={donutData} title="Trésorerie par entité" size={160} />
+        </div>
+
+        <div className="lg:col-span-2 bg-neutral-900/50 rounded-2xl border border-neutral-800/50 overflow-hidden">
+          <div className="p-6 border-b border-neutral-800/50">
+            <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Détail par entité</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-neutral-800/50">
+                  <th className="text-left px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Entité</th>
+                  <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Revenus</th>
+                  <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Dépenses</th>
+                  <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Trésorerie</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entityStats.map((e, i) => (
+                  <tr key={e.id} className={`border-b border-neutral-800/30 last:border-0 ${i % 2 !== 0 ? 'bg-neutral-900/20' : ''}`}>
+                    <td className="px-6 py-4 text-sm text-white">{e.name}</td>
+                    <td className="px-6 py-4 text-sm text-right text-emerald-400">{e.revenue.toLocaleString('fr-FR')} FCFA</td>
+                    <td className="px-6 py-4 text-sm text-right text-red-400">{e.expense.toLocaleString('fr-FR')} FCFA</td>
+                    <td className={`px-6 py-4 text-sm text-right font-medium ${e.cash >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{e.cash >= 0 ? '+' : ''}{e.cash.toLocaleString('fr-FR')} FCFA</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ==================== MAIN LAYOUT ====================
 function MainLayout() {
   const { userData, signOut } = useAuth();
@@ -1643,24 +1761,38 @@ function MainLayout() {
   const [activeView, setActiveView] = useState('dashboard');
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState({});
 
   const company = COMPANIES[activeCompany];
   const userRole = getUserRole();
-  const accessibleCompanies = Object.values(COMPANIES).filter(c =>
+  const hasCompanyAccess = (id) =>
     userData?.role === 'admin_treasury' ||
     !userData?.companies?.length ||
-    userData.companies.includes(c.id)
-  );
+    userData.companies.includes(id);
+
+  // Seules les sociétés sans parent apparaissent à plat dans la sidebar ;
+  // les départements sont rendus en sous-liste sous leur parent (voir aside).
+  const accessibleCompanies = Object.values(COMPANIES).filter(c => !c.parentId && hasCompanyAccess(c.id));
+
+  // Groupe Abayili Investissement (parent ou l'un de ses départements) pour
+  // savoir si l'entrée de nav "Portefeuille Global" doit s'afficher.
+  const portfolioParent = company.departments ? company : (company.parentId ? COMPANIES[company.parentId] : null);
+
+  const toggleGroup = (id) => setExpandedGroups(prev => ({ ...prev, [id]: !prev[id] }));
 
   const navItems = [
     { id: 'dashboard', label: 'Tableau de Bord', Icon: Icons.BarChart3 },
     { id: 'transactions', label: 'Transactions', Icon: Icons.Receipt },
     { id: 'budgets', label: 'Budgets', Icon: Icons.PiggyBank },
-    { id: 'objectives', label: 'Objectifs', Icon: Icons.Target }
+    { id: 'objectives', label: 'Objectifs', Icon: Icons.Target },
+    ...(portfolioParent ? [{ id: 'portfolio_global', label: 'Portefeuille Global', Icon: Icons.PieChart }] : [])
   ];
 
   // Réinitialiser le mois lors du changement d'entreprise
   const handleCompanyChange = (companyId) => {
+    const nextCompany = COMPANIES[companyId];
+    const nextPortfolioParent = nextCompany.departments ? nextCompany : (nextCompany.parentId ? COMPANIES[nextCompany.parentId] : null);
+    if (activeView === 'portfolio_global' && !nextPortfolioParent) setActiveView('dashboard');
     setActiveCompany(companyId);
     setSelectedMonth(getCurrentMonth());
     setMobileMenuOpen(false);
@@ -1715,15 +1847,43 @@ function MainLayout() {
               {accessibleCompanies.map(comp => {
                 const CompIcon = Icons[comp.icon] || Icons.Building2;
                 const isActive = comp.id === activeCompany;
+                const hasDepartments = !!comp.departments?.length;
+                const isExpanded = expandedGroups[comp.id] ?? (isActive || comp.departments?.includes(activeCompany));
                 return (
-                  <button key={comp.id} onClick={() => handleCompanyChange(comp.id)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive ? 'bg-white/5 text-white' : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.02]'}`}>
-                    <CompIcon size={18} />
-                    <div className="text-left flex-1 min-w-0">
-                      <p className="text-sm truncate">{comp.name}</p>
-                      <p className="text-[10px] text-neutral-500 truncate">{comp.description}</p>
+                  <div key={comp.id}>
+                    <div className={`w-full flex items-center gap-1 rounded-lg transition-all duration-200 ${isActive ? 'bg-white/5 text-white' : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.02]'}`}>
+                      <button onClick={() => handleCompanyChange(comp.id)} className="flex-1 flex items-center gap-3 px-3 py-2.5 min-w-0 text-left">
+                        <CompIcon size={18} />
+                        <div className="text-left flex-1 min-w-0">
+                          <p className="text-sm truncate">{comp.name}</p>
+                          <p className="text-[10px] text-neutral-500 truncate">{comp.description}</p>
+                        </div>
+                        {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0"></div>}
+                      </button>
+                      {hasDepartments && (
+                        <button onClick={() => toggleGroup(comp.id)} className="p-2 mr-1 hover:bg-white/5 rounded-lg text-neutral-500 hover:text-white flex-shrink-0" title={isExpanded ? 'Réduire les départements' : 'Déplier les départements'}>
+                          {isExpanded ? <Icons.ChevronUp size={14} /> : <Icons.ChevronDown size={14} />}
+                        </button>
+                      )}
                     </div>
-                    {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
-                  </button>
+                    {hasDepartments && isExpanded && (
+                      <div className="ml-4 pl-3 border-l border-neutral-800/50 mt-1 space-y-0.5">
+                        {comp.departments.filter(id => hasCompanyAccess(id)).map(deptId => {
+                          const dept = COMPANIES[deptId];
+                          if (!dept) return null;
+                          const DeptIcon = Icons[dept.icon] || Icons.Building2;
+                          const isDeptActive = deptId === activeCompany;
+                          return (
+                            <button key={deptId} onClick={() => handleCompanyChange(deptId)} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${isDeptActive ? 'bg-white/5 text-white' : 'text-neutral-500 hover:text-neutral-200 hover:bg-white/[0.02]'}`}>
+                              <DeptIcon size={14} />
+                              <span className="text-xs truncate flex-1 text-left">{dept.name}</span>
+                              {isDeptActive && <div className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0"></div>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -1748,6 +1908,7 @@ function MainLayout() {
           {activeView === 'transactions' && <TransactionsPage company={company} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />}
           {activeView === 'budgets' && <BudgetsPage company={company} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />}
           {activeView === 'objectives' && <ObjectivesPage company={company} />}
+          {activeView === 'portfolio_global' && portfolioParent && <PortfolioGlobalPage company={portfolioParent} />}
         </main>
       </div>
     </div>
