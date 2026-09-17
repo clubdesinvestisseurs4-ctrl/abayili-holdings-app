@@ -53,24 +53,24 @@ const COMPANIES = {
   // le trading actif (RC Trading) sont deux activités distinctes avec leur
   // propre résultat, même si le capital du second vient du premier.
   abayili_invest_rc: { id: 'abayili_invest_rc', parentId: 'abayili_invest', name: 'Réseau Cryptos — Actifs', shortName: 'RC', description: 'Abayili Investissement — Achat/détention d\'actifs crypto', icon: 'TrendingUp',
-    revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
-    expenseCategories: [{ id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏦' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
+    revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
+    expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
   },
   abayili_invest_rc_trading: { id: 'abayili_invest_rc_trading', parentId: 'abayili_invest', name: 'Réseau Cryptos — Trading', shortName: 'RC Trading', description: 'Abayili Investissement — Trading actif crypto', icon: 'BarChart3',
-    revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
-    expenseCategories: [{ id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏦' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
+    revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
+    expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
   },
   abayili_invest_fcp: { id: 'abayili_invest_fcp', parentId: 'abayili_invest', name: 'FCP', shortName: 'FCP', description: 'Abayili Investissement — Département Capital Risque', icon: 'Layers',
-    revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
-    expenseCategories: [{ id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏦' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
+    revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
+    expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
   },
   abayili_invest_rta: { id: 'abayili_invest_rta', parentId: 'abayili_invest', name: 'RTA', shortName: 'RTA', description: 'Abayili Investissement — Département Capital Risque', icon: 'BarChart3',
-    revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
-    expenseCategories: [{ id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏦' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
+    revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
+    expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
   },
   abayili_invest_rpp_c1: { id: 'abayili_invest_rpp_c1', parentId: 'abayili_invest', name: 'Réseau Parieurs Pro — Compte 1', shortName: 'RPP C1', description: 'Abayili Investissement — Département Capital Risque', icon: 'Target',
-    revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
-    expenseCategories: [{ id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏦' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }]
+    revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
+    expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }]
   },
   abayili_consulting: { id: 'abayili_consulting', name: 'Abayili Consulting', shortName: 'AC', description: 'Consulting, Formation & Conférences', icon: 'GraduationCap',
     revenueCategories: [{ id: 'formations', name: 'Ventes de Formations', icon: '📚' }, { id: 'consulting', name: 'Missions Consulting', icon: '💼' }, { id: 'conferences', name: 'Conférences', icon: '🎤' }, { id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
@@ -143,7 +143,7 @@ function MonthSelector({ selectedMonth, onChange, availableMonths = [], isTotal 
               ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
               : 'bg-neutral-800/50 text-neutral-400 border-neutral-700/30 hover:text-white hover:border-neutral-600'
           }`}
-          title={isTotal ? 'Passer en vue mensuelle' : 'Voir le total annuel'}
+          title={isTotal ? 'Passer en vue mensuelle' : 'Voir le total global (toutes années)'}
         >
           <Icons.Layers size={14} className="inline mr-1.5" />
           Total
@@ -154,7 +154,7 @@ function MonthSelector({ selectedMonth, onChange, availableMonths = [], isTotal 
         <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2">
           <Icons.Calendar size={15} className="text-amber-400" />
           <span className="text-sm font-medium text-amber-400">
-            Janv. — {formatMonthDisplay(currentMonth)}
+            Depuis le début
           </span>
         </div>
       ) : (
@@ -490,45 +490,44 @@ function LoginPage() {
   );
 }
 
-// ==================== YEARLY TOTAL VIEW ====================
+// ==================== YEARLY TOTAL VIEW (Total Global, toutes années) ====================
+// Anciennement limité à l'année en cours (un mois-par-mois Promise.all sur
+// currentYear) - maintenant que des transactions existent sur plusieurs
+// années (2025+2026), ce total doit couvrir tout l'historique, pas juste
+// l'année en cours. Récupère tout (comme PortfolioGlobalPage) puis regroupe
+// par année/mois côté client.
+const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+
 function YearlyTotalView({ company }) {
   const [loading, setLoading] = useState(true);
   const [monthlyStats, setMonthlyStats] = useState([]);
-  const currentYear = new Date().getFullYear();
-  const currentMonthNum = parseInt(getCurrentMonth().split('-')[1]);
-  const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
-  useEffect(() => { loadYearData(); }, [company.id]);
+  useEffect(() => { loadAllData(); }, [company.id]);
 
-  const loadYearData = async () => {
+  const loadAllData = async () => {
     setLoading(true);
     try {
-      const months = Array.from({ length: currentMonthNum }, (_, i) =>
-        `${currentYear}-${String(i + 1).padStart(2, '0')}`
-      );
-      const results = await Promise.all(
-        months.map(async (monthStr) => {
-          try {
-            const r = await TransactionAPI.getAll(company.id, { month: monthStr });
-            const txs = r.data || [];
-            const validated = txs.filter(t => t.status === 'validated');
-            const revenue = validated
-              .filter(t => t.type === 'revenue')
-              .reduce((s, t) => s + (t.amount || 0), 0);
-            const expense = validated
-              .filter(t => t.type === 'expense')
-              .reduce((s, t) => s + (t.amount || 0), 0);
-            const m = parseInt(monthStr.split('-')[1]);
-            return { monthNum: m, monthLabel: MONTHS_FR[m - 1], revenue, expense };
-          } catch {
-            const m = parseInt(monthStr.split('-')[1]);
-            return { monthNum: m, monthLabel: MONTHS_FR[m - 1], revenue: 0, expense: 0 };
-          }
+      const r = await TransactionAPI.getAll(company.id);
+      const validated = (r.data || []).filter(t => t.status === 'validated' && t.date);
+
+      const byYearMonth = {};
+      for (const t of validated) {
+        const ym = t.date.slice(0, 7); // YYYY-MM
+        if (!byYearMonth[ym]) byYearMonth[ym] = { revenue: 0, expense: 0 };
+        if (t.type === 'revenue') byYearMonth[ym].revenue += (t.amount || 0);
+        else if (t.type === 'expense') byYearMonth[ym].expense += (t.amount || 0);
+      }
+
+      const rows = Object.entries(byYearMonth)
+        .map(([ym, v]) => {
+          const [year, month] = ym.split('-').map(Number);
+          return { ym, year, monthLabel: MONTHS_FR[month - 1], ...v };
         })
-      );
-      setMonthlyStats(results);
+        .sort((a, b) => a.ym.localeCompare(b.ym));
+
+      setMonthlyStats(rows);
     } catch (err) {
-      console.error('Erreur chargement total annuel:', err);
+      console.error('Erreur chargement total global:', err);
     } finally {
       setLoading(false);
     }
@@ -537,6 +536,8 @@ function YearlyTotalView({ company }) {
   const totalRevenue = monthlyStats.reduce((s, d) => s + d.revenue, 0);
   const totalExpense = monthlyStats.reduce((s, d) => s + d.expense, 0);
   const netResult = totalRevenue - totalExpense;
+  const firstYear = monthlyStats[0]?.year;
+  const lastYear = monthlyStats[monthlyStats.length - 1]?.year;
 
   if (loading) return (
     <div className="flex items-center justify-center py-16">
@@ -548,17 +549,17 @@ function YearlyTotalView({ company }) {
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <MetricCard
-          label={`Total Entrées ${currentYear}`}
+          label="Total Entrées (toutes années)"
           value={`${totalRevenue.toLocaleString('fr-FR')} FCFA`}
           icon="ArrowUpRight"
         />
         <MetricCard
-          label={`Total Sorties ${currentYear}`}
+          label="Total Sorties (toutes années)"
           value={`${totalExpense.toLocaleString('fr-FR')} FCFA`}
           icon="ArrowDownRight"
         />
         <MetricCard
-          label="Résultat Net Annuel"
+          label="Résultat Net Global"
           value={`${netResult >= 0 ? '+' : ''}${netResult.toLocaleString('fr-FR')} FCFA`}
           positive={netResult >= 0}
           icon="TrendingUp"
@@ -568,10 +569,13 @@ function YearlyTotalView({ company }) {
       <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b border-neutral-800/50">
           <h3 className="text-sm text-neutral-400 uppercase tracking-wider">
-            Récapitulatif Mensuel — Janvier à {MONTHS_FR[currentMonthNum - 1]} {currentYear}
+            Récapitulatif Mensuel{firstYear ? ` — ${firstYear === lastYear ? firstYear : `${firstYear} à ${lastYear}`}` : ''}
           </h3>
           <Icons.Calendar size={16} className="text-neutral-500" />
         </div>
+        {monthlyStats.length === 0 ? (
+          <p className="text-neutral-500 text-sm text-center py-8">Aucune transaction validée pour l'instant.</p>
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -586,8 +590,8 @@ function YearlyTotalView({ company }) {
               {monthlyStats.map((row, i) => {
                 const net = row.revenue - row.expense;
                 return (
-                  <tr key={row.monthNum} className={`border-b border-neutral-800/30 last:border-0 hover:bg-neutral-800/20 transition-colors ${i % 2 !== 0 ? 'bg-neutral-900/20' : ''}`}>
-                    <td className="px-6 py-4 text-sm text-white">{row.monthLabel}</td>
+                  <tr key={row.ym} className={`border-b border-neutral-800/30 last:border-0 hover:bg-neutral-800/20 transition-colors ${i % 2 !== 0 ? 'bg-neutral-900/20' : ''}`}>
+                    <td className="px-6 py-4 text-sm text-white">{row.monthLabel} {row.year}</td>
                     <td className="px-6 py-4 text-sm text-right text-emerald-400">
                       {row.revenue > 0 ? `+${row.revenue.toLocaleString('fr-FR')}` : row.revenue.toLocaleString('fr-FR')} FCFA
                     </td>
@@ -617,6 +621,7 @@ function YearlyTotalView({ company }) {
             </tfoot>
           </table>
         </div>
+        )}
       </div>
     </div>
   );
