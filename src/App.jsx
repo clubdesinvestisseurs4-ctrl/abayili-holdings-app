@@ -44,7 +44,7 @@ const Icons = {
 
 // ==================== COMPANIES CONFIG ====================
 const COMPANIES = {
-  abayili_invest: { id: 'abayili_invest', name: 'Abayili Investissement', shortName: 'AI', description: 'Société de Capital-Risque', icon: 'Building2',
+  abayili_invest: { id: 'abayili_invest', name: 'Abayili Investissement', shortName: 'AI', description: 'Société de Capital-Risque', icon: 'Building2', liquidity: 'cash',
     departments: ['abayili_invest_rc', 'abayili_invest_rc_trading', 'abayili_invest_fcp', 'abayili_invest_rta', 'abayili_invest_rpp_c1'],
     revenueCategories: [{ id: 'commissions', name: 'Commissions', icon: '💰' }, { id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
     expenseCategories: [{ id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '🏢' }, { id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏢' }, { id: 'charges_fixes_donations', name: 'Charges Fixes Donations', icon: '🏢' }, { id: 'charges_fixes_frais_opérationnels', name: 'Charges Fixes Frais Opérationnels', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
@@ -52,35 +52,35 @@ const COMPANIES = {
   // Réseau Cryptos scindé en deux : l'achat/détention d'actifs crypto (RC) et
   // le trading actif (RC Trading) sont deux activités distinctes avec leur
   // propre résultat, même si le capital du second vient du premier.
-  abayili_invest_rc: { id: 'abayili_invest_rc', parentId: 'abayili_invest', name: 'Réseau Cryptos — Actifs', shortName: 'RC', description: 'Abayili Investissement — Achat/détention d\'actifs crypto', icon: 'TrendingUp',
+  abayili_invest_rc: { id: 'abayili_invest_rc', parentId: 'abayili_invest', name: 'Réseau Cryptos — Actifs', shortName: 'RC', description: 'Abayili Investissement — Achat/détention d\'actifs crypto', icon: 'TrendingUp', liquidity: 'placé',
     revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
     expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
   },
-  abayili_invest_rc_trading: { id: 'abayili_invest_rc_trading', parentId: 'abayili_invest', name: 'Réseau Cryptos — Trading', shortName: 'RC Trading', description: 'Abayili Investissement — Trading actif crypto', icon: 'BarChart3',
+  abayili_invest_rc_trading: { id: 'abayili_invest_rc_trading', parentId: 'abayili_invest', name: 'Réseau Cryptos — Trading', shortName: 'RC Trading', description: 'Abayili Investissement — Trading actif crypto', icon: 'BarChart3', liquidity: 'placé',
     revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
     expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
   },
-  abayili_invest_fcp: { id: 'abayili_invest_fcp', parentId: 'abayili_invest', name: 'FCP', shortName: 'FCP', description: 'Abayili Investissement — Département Capital Risque', icon: 'Layers',
+  abayili_invest_fcp: { id: 'abayili_invest_fcp', parentId: 'abayili_invest', name: 'FCP', shortName: 'FCP', description: 'Abayili Investissement — Département Capital Risque', icon: 'Layers', liquidity: 'placé',
     revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
     expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
   },
-  abayili_invest_rta: { id: 'abayili_invest_rta', parentId: 'abayili_invest', name: 'RTA', shortName: 'RTA', description: 'Abayili Investissement — Département Capital Risque', icon: 'BarChart3',
+  abayili_invest_rta: { id: 'abayili_invest_rta', parentId: 'abayili_invest', name: 'RTA', shortName: 'RTA', description: 'Abayili Investissement — Département Capital Risque', icon: 'BarChart3', liquidity: 'placé',
     revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
     expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
   },
-  abayili_invest_rpp_c1: { id: 'abayili_invest_rpp_c1', parentId: 'abayili_invest', name: 'Réseau Parieurs Pro — Compte 1', shortName: 'RPP C1', description: 'Abayili Investissement — Département Capital Risque', icon: 'Target',
+  abayili_invest_rpp_c1: { id: 'abayili_invest_rpp_c1', parentId: 'abayili_invest', name: 'Réseau Parieurs Pro — Compte 1', shortName: 'RPP C1', description: 'Abayili Investissement — Département Capital Risque', icon: 'Target', liquidity: 'placé',
     revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
     expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }]
   },
-  abayili_consulting: { id: 'abayili_consulting', name: 'Abayili Consulting', shortName: 'AC', description: 'Consulting, Formation & Conférences', icon: 'GraduationCap',
+  abayili_consulting: { id: 'abayili_consulting', name: 'Abayili Consulting', shortName: 'AC', description: 'Consulting, Formation & Conférences', icon: 'GraduationCap', liquidity: 'cash',
     revenueCategories: [{ id: 'formations', name: 'Ventes de Formations', icon: '📚' }, { id: 'consulting', name: 'Missions Consulting', icon: '💼' }, { id: 'conferences', name: 'Conférences', icon: '🎤' }, { id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
     expenseCategories: [{ id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
   },
-  ai_for_afrika: { id: 'ai_for_afrika', name: 'AI for Afrika', shortName: 'AFA', description: 'Intelligence Artificielle & Développement', icon: 'Brain',
+  ai_for_afrika: { id: 'ai_for_afrika', name: 'AI for Afrika', shortName: 'AFA', description: 'Intelligence Artificielle & Développement', icon: 'Brain', liquidity: 'cash',
     revenueCategories: [{ id: 'contrats_dev', name: 'Contrats de Développement', icon: '💻' }, { id: 'licences', name: 'Licences Logicielles', icon: '📜' }, { id: 'maintenance', name: 'Maintenance & Support', icon: '🔧' }],
     expenseCategories: [{ id: 'charges_fixes_frais_opérationnels', name: 'Charges Fixes Frais Opérationnels', icon: '🏢' }, { id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
   },
-  gourmandises_africaines: { id: 'gourmandises_africaines', name: 'Gourmandises Africaines', shortName: 'GA', description: 'Restauration & Traiteur Africain', icon: 'ChefHat',
+  gourmandises_africaines: { id: 'gourmandises_africaines', name: 'Gourmandises Africaines', shortName: 'GA', description: 'Restauration & Traiteur Africain', icon: 'ChefHat', liquidity: 'cash',
     revenueCategories: [{ id: 'restauration', name: 'Restauration', icon: '🍽️' }, { id: 'traiteur', name: 'Traiteur & Événements', icon: '🥘' }, { id: 'vente_emporter', name: 'Ventes à Emporter', icon: '📦' }, { id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
     expenseCategories: [{ id: 'matieres_premieres', name: 'Matières Premières', icon: '🧺' }, { id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏦' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
   }
@@ -1673,21 +1673,27 @@ function ObjectivesPage({ company }) {
 // sources plutôt que de vérifier l'app contre elle-même.
 const REFERENCE_TOLERANCE_FCFA = 100;
 
-function PortfolioGlobalPage({ company }) {
+// Vue au niveau du holding entier (pas juste Abayili Investissement) :
+// distingue le CASH réel (Abayili Investissement, Consulting, AI for Afrika,
+// Gourmandises Africaines - de l'argent disponible) du CAPITAL PLACÉ (les
+// départements Réseau Cryptos/FCP/RTA/RPP - de la valeur immobilisée dans des
+// actifs/positions, pas du cash mobilisable). Les additionner sans distinction
+// donnerait une fausse impression de liquidité disponible.
+function PortfolioGlobalPage() {
   const [loading, setLoading] = useState(true);
   const [entityStats, setEntityStats] = useState([]);
 
-  useEffect(() => { loadPortfolio(); }, [company.id]);
+  useEffect(() => { loadPortfolio(); }, []);
 
   const loadPortfolio = async () => {
     setLoading(true);
     try {
-      const entityIds = [company.id, ...(company.departments || [])];
+      const allEntities = Object.values(COMPANIES);
       const results = await Promise.all(
-        entityIds.map(async (id) => {
+        allEntities.map(async (comp) => {
           let revenue = 0, expense = 0;
           try {
-            const res = await TransactionAPI.getAll(id);
+            const res = await TransactionAPI.getAll(comp.id);
             const txs = (res.data || []).filter(t => t.status === 'validated');
             revenue = txs.filter(t => t.type === 'revenue').reduce((s, t) => s + (t.amount || 0), 0);
             expense = txs.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
@@ -1695,13 +1701,13 @@ function PortfolioGlobalPage({ company }) {
 
           let reference = null;
           try {
-            const refRes = await AnalyticsAPI.getReferenceCash(id);
+            const refRes = await AnalyticsAPI.getReferenceCash(comp.id);
             reference = refRes.data || null;
           } catch { /* pas de référence renseignée pour cette entité */ }
 
           const cash = revenue - expense;
           const ecart = reference ? cash - reference.cash : null;
-          return { id, name: COMPANIES[id]?.name || id, revenue, expense, cash, reference, ecart };
+          return { id: comp.id, name: comp.name, liquidity: comp.liquidity || 'cash', revenue, expense, cash, reference, ecart };
         })
       );
       setEntityStats(results);
@@ -1712,11 +1718,11 @@ function PortfolioGlobalPage({ company }) {
     }
   };
 
-  const totalCash = entityStats.reduce((s, e) => s + e.cash, 0);
-  const totalRevenue = entityStats.reduce((s, e) => s + e.revenue, 0);
-  const totalExpense = entityStats.reduce((s, e) => s + e.expense, 0);
+  const cashEntities = entityStats.filter(e => e.liquidity === 'cash');
+  const placeEntities = entityStats.filter(e => e.liquidity === 'placé');
+  const totalCash = cashEntities.reduce((s, e) => s + e.cash, 0);
+  const totalPlace = placeEntities.reduce((s, e) => s + e.cash, 0);
   const entitiesWithReference = entityStats.filter(e => e.reference);
-  const totalReference = entitiesWithReference.reduce((s, e) => s + e.reference.cash, 0);
   const donutData = entityStats.filter(e => e.cash > 0).map(e => ({ name: e.name, value: e.cash }));
 
   if (loading) return (
@@ -1725,80 +1731,94 @@ function PortfolioGlobalPage({ company }) {
     </div>
   );
 
+  const renderSection = (title, icon, entities, total, tint) => {
+    const SectionIcon = Icons[icon];
+    return (
+    <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 overflow-hidden">
+      <div className="flex items-center justify-between p-6 border-b border-neutral-800/50">
+        <div>
+          <h3 className="text-sm text-neutral-400 uppercase tracking-wider">{title}</h3>
+          <p className={`text-lg font-light mt-1 ${tint}`}>{total >= 0 ? '+' : ''}{total.toLocaleString('fr-FR')} FCFA</p>
+        </div>
+        <SectionIcon size={18} className="text-neutral-500" />
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-neutral-800/50">
+              <th className="text-left px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Entité</th>
+              <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Calculé (app)</th>
+              <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Référence (Excel)</th>
+              <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Écart</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entities.map((e, i) => {
+              const hasRef = !!e.reference;
+              const isOk = hasRef && Math.abs(e.ecart) <= REFERENCE_TOLERANCE_FCFA;
+              return (
+                <tr key={e.id} className={`border-b border-neutral-800/30 last:border-0 ${i % 2 !== 0 ? 'bg-neutral-900/20' : ''}`}>
+                  <td className="px-6 py-4 text-sm text-white">{e.name}</td>
+                  <td className={`px-6 py-4 text-sm text-right ${e.cash >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{e.cash >= 0 ? '+' : ''}{e.cash.toLocaleString('fr-FR')} FCFA</td>
+                  <td className="px-6 py-4 text-sm text-right text-neutral-400">
+                    {hasRef ? `${e.reference.cash.toLocaleString('fr-FR')} FCFA` : <span className="text-neutral-600 italic">Non renseigné</span>}
+                    {hasRef && e.reference.asOf && <div className="text-[10px] text-neutral-600 mt-0.5">au {e.reference.asOf}</div>}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-right">
+                    {hasRef ? (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${isOk ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {e.ecart >= 0 ? '+' : ''}{e.ecart.toLocaleString('fr-FR')} FCFA
+                      </span>
+                    ) : <span className="text-neutral-600">—</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    );
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-6 sm:mb-8">
         <h2 className="text-xl sm:text-2xl font-light tracking-tight">Portefeuille Global</h2>
-        <p className="text-neutral-500 text-sm mt-1">{company.name} — vue d'ensemble tous départements (trésorerie cumulée depuis le début)</p>
+        <p className="text-neutral-500 text-sm mt-1">Vue d'ensemble du holding — cash disponible et capital placé, tous départements et sociétés confondus</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <MetricCard label="Trésorerie Calculée (app)" value={`${totalCash >= 0 ? '+' : ''}${totalCash.toLocaleString('fr-FR')} FCFA`} positive={totalCash >= 0} icon="PiggyBank" />
-        <MetricCard
-          label={`Trésorerie de Référence (Excel)${entitiesWithReference.length < entityStats.length ? ` · ${entitiesWithReference.length}/${entityStats.length}` : ''}`}
-          value={entitiesWithReference.length > 0 ? `${totalReference >= 0 ? '+' : ''}${totalReference.toLocaleString('fr-FR')} FCFA` : 'Non renseigné'}
-          positive={entitiesWithReference.length > 0 ? totalReference >= 0 : undefined}
-          icon="FileText"
-        />
-        <MetricCard label="Revenus Cumulés (tous départements)" value={`${totalRevenue.toLocaleString('fr-FR')} FCFA`} icon="ArrowUpRight" />
-        <MetricCard label="Dépenses Cumulées (tous départements)" value={`${totalExpense.toLocaleString('fr-FR')} FCFA`} icon="ArrowDownRight" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+        <MetricCard label="Cash Disponible (Abayili Invest, Consulting, AI for Afrika, Gourmandises)" value={`${totalCash >= 0 ? '+' : ''}${totalCash.toLocaleString('fr-FR')} FCFA`} positive={totalCash >= 0} icon="PiggyBank" />
+        <MetricCard label="Capital Placé (Cryptos, FCP, RTA, RPP — immobilisé, pas mobilisable)" value={`${totalPlace >= 0 ? '+' : ''}${totalPlace.toLocaleString('fr-FR')} FCFA`} positive={totalPlace >= 0} icon="TrendingUp" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-1 bg-neutral-900/50 rounded-2xl p-4 sm:p-6 border border-neutral-800/50">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Répartition du cash</h3>
+            <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Répartition (toutes entités)</h3>
             <Icons.PieChart size={16} className="text-neutral-500" />
           </div>
-          <DonutChart data={donutData} title="Trésorerie par entité" size={160} />
+          <DonutChart data={donutData} title="Par entité" size={160} />
         </div>
-
-        <div className="lg:col-span-2 bg-neutral-900/50 rounded-2xl border border-neutral-800/50 overflow-hidden">
-          <div className="p-6 border-b border-neutral-800/50">
-            <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Détail par entité — réconciliation app / Excel</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-neutral-800/50">
-                  <th className="text-left px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Entité</th>
-                  <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Trésorerie (app)</th>
-                  <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Référence (Excel)</th>
-                  <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Écart</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entityStats.map((e, i) => {
-                  const hasRef = !!e.reference;
-                  const isOk = hasRef && Math.abs(e.ecart) <= REFERENCE_TOLERANCE_FCFA;
-                  return (
-                    <tr key={e.id} className={`border-b border-neutral-800/30 last:border-0 ${i % 2 !== 0 ? 'bg-neutral-900/20' : ''}`}>
-                      <td className="px-6 py-4 text-sm text-white">{e.name}</td>
-                      <td className={`px-6 py-4 text-sm text-right ${e.cash >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{e.cash >= 0 ? '+' : ''}{e.cash.toLocaleString('fr-FR')} FCFA</td>
-                      <td className="px-6 py-4 text-sm text-right text-neutral-400">
-                        {hasRef ? `${e.reference.cash.toLocaleString('fr-FR')} FCFA` : <span className="text-neutral-600 italic">Non renseigné</span>}
-                        {hasRef && e.reference.asOf && <div className="text-[10px] text-neutral-600 mt-0.5">au {e.reference.asOf}</div>}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-right">
-                        {hasRef ? (
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${isOk ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                            {e.ecart >= 0 ? '+' : ''}{e.ecart.toLocaleString('fr-FR')} FCFA
-                          </span>
-                        ) : <span className="text-neutral-600">—</span>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          {entitiesWithReference.length > 0 && (
-            <div className="px-6 py-3 border-t border-neutral-800/50 text-[11px] text-neutral-500">
-              Écart ≤ {REFERENCE_TOLERANCE_FCFA} FCFA considéré comme concordant (arrondis). La référence est mise à jour manuellement depuis les fichiers Excel du Drive.
-            </div>
-          )}
+        <div className="lg:col-span-2 flex items-center">
+          <p className="text-xs text-neutral-500 leading-relaxed">
+            <Icons.AlertTriangle size={14} className="inline mr-1.5 text-amber-400" />
+            Le cash et le capital placé sont volontairement séparés : le capital placé (crypto détenue, positions de paris en cours) a de la valeur mais n'est pas immédiatement disponible comme le cash en compte. Les additionner donnerait une fausse impression de liquidité.
+          </p>
         </div>
       </div>
+
+      <div className="space-y-6">
+        {renderSection('Cash Disponible', 'PiggyBank', cashEntities, totalCash, 'text-emerald-400')}
+        {renderSection('Capital Placé', 'TrendingUp', placeEntities, totalPlace, 'text-amber-400')}
+      </div>
+
+      {entitiesWithReference.length > 0 && (
+        <div className="mt-4 text-[11px] text-neutral-500">
+          Écart ≤ {REFERENCE_TOLERANCE_FCFA} FCFA considéré comme concordant (arrondis). La référence est mise à jour manuellement depuis les fichiers Excel du Drive.
+        </div>
+      )}
     </div>
   );
 }
@@ -1828,25 +1848,21 @@ function MainLayout() {
   // les départements sont rendus en sous-liste sous leur parent (voir aside).
   const accessibleCompanies = Object.values(COMPANIES).filter(c => !c.parentId && hasCompanyAccess(c.id));
 
-  // Groupe Abayili Investissement (parent ou l'un de ses départements) pour
-  // savoir si l'entrée de nav "Portefeuille Global" doit s'afficher.
-  const portfolioParent = company.departments ? company : (company.parentId ? COMPANIES[company.parentId] : null);
-
   const toggleGroup = (id) => setExpandedGroups(prev => ({ ...prev, [id]: !prev[id] }));
 
+  // Portefeuille Global est une vue au niveau du holding entier (toutes les
+  // sociétés + tous les départements), pas juste Abayili Investissement -
+  // donc toujours disponible, quelle que soit la société active.
   const navItems = [
     { id: 'dashboard', label: 'Tableau de Bord', Icon: Icons.BarChart3 },
     { id: 'transactions', label: 'Transactions', Icon: Icons.Receipt },
     { id: 'budgets', label: 'Budgets', Icon: Icons.PiggyBank },
     { id: 'objectives', label: 'Objectifs', Icon: Icons.Target },
-    ...(portfolioParent ? [{ id: 'portfolio_global', label: 'Portefeuille Global', Icon: Icons.PieChart }] : [])
+    { id: 'portfolio_global', label: 'Portefeuille Global', Icon: Icons.PieChart }
   ];
 
   // Réinitialiser le mois lors du changement d'entreprise
   const handleCompanyChange = (companyId) => {
-    const nextCompany = COMPANIES[companyId];
-    const nextPortfolioParent = nextCompany.departments ? nextCompany : (nextCompany.parentId ? COMPANIES[nextCompany.parentId] : null);
-    if (activeView === 'portfolio_global' && !nextPortfolioParent) setActiveView('dashboard');
     setActiveCompany(companyId);
     setSelectedMonth(getCurrentMonth());
     setMobileMenuOpen(false);
@@ -1962,7 +1978,7 @@ function MainLayout() {
           {activeView === 'transactions' && <TransactionsPage company={company} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />}
           {activeView === 'budgets' && <BudgetsPage company={company} selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />}
           {activeView === 'objectives' && <ObjectivesPage company={company} />}
-          {activeView === 'portfolio_global' && portfolioParent && <PortfolioGlobalPage company={portfolioParent} />}
+          {activeView === 'portfolio_global' && <PortfolioGlobalPage />}
         </main>
       </div>
     </div>
