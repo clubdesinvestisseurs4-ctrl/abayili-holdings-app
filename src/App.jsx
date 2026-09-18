@@ -708,6 +708,88 @@ function PionexGridBotWidget() {
   );
 }
 
+// Widget de rendement (ROI) - calculé à partir des transactions déjà
+// enregistrées, pas d'API externe (contrairement au bot Pionex). Répond à
+// "suis-je rentable ?" pour une entité "capital placé" : capital investi =
+// somme des apports (catégorie "Apport Capital"), gains réels = somme des
+// vrais revenus (toutes les autres catégories de revenu), rendement net =
+// gains - charges, rapporté au capital investi.
+function RendementWidget({ company }) {
+  const [transactions, setTransactions] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    TransactionAPI.getAll(company.id)
+      .then(res => { if (!cancelled) setTransactions(res.data || []); })
+      .catch(err => { if (!cancelled) setError(err.response?.data?.detail || err.message); });
+    return () => { cancelled = true; };
+  }, [company.id]);
+
+  if (error) {
+    return (
+      <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50 mb-6 sm:mb-8 text-sm text-neutral-500">
+        <Icons.AlertTriangle size={14} className="inline mr-1.5 text-amber-400" />
+        Rendement indisponible pour l'instant ({error}).
+      </div>
+    );
+  }
+  if (!transactions) {
+    return (
+      <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50 mb-6 sm:mb-8 flex items-center gap-3">
+        <Icons.Loader size={18} className="text-neutral-500" />
+        <span className="text-sm text-neutral-500">Calcul du rendement...</span>
+      </div>
+    );
+  }
+
+  const validated = transactions.filter(t => t.status === 'validated');
+  const capitalInvesti = validated
+    .filter(t => t.type === 'revenue' && t.category === 'Apport Capital')
+    .reduce((sum, t) => sum + (t.amount || 0), 0);
+  const gainsReels = validated
+    .filter(t => t.type === 'revenue' && t.category !== 'Apport Capital')
+    .reduce((sum, t) => sum + (t.amount || 0), 0);
+  const charges = validated
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + (t.amount || 0), 0);
+  const resultatNet = gainsReels - charges;
+  const rendementPct = capitalInvesti > 0 ? (resultatNet / capitalInvesti) * 100 : 0;
+  const isProfitable = resultatNet >= 0;
+
+  return (
+    <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 mb-6 sm:mb-8 overflow-hidden">
+      <div className="flex items-center justify-between p-6 pb-4">
+        <div>
+          <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Rendement — Historique complet</h3>
+          <p className="text-[11px] text-neutral-600 mt-1">Basé sur toutes les transactions validées, capital placé de {company.name}</p>
+        </div>
+        <Icons.BarChart3 size={18} className="text-neutral-500" />
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-6 pb-6">
+        <div>
+          <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Capital investi</p>
+          <p className="text-sm text-white">{capitalInvesti.toLocaleString('fr-FR')} FCFA</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Gains réalisés</p>
+          <p className="text-sm text-emerald-400">+{gainsReels.toLocaleString('fr-FR')} FCFA</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Charges</p>
+          <p className="text-sm text-red-400">-{charges.toLocaleString('fr-FR')} FCFA</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Rendement</p>
+          <p className={`text-sm font-medium ${isProfitable ? 'text-emerald-400' : 'text-red-400'}`}>
+            {isProfitable ? '+' : ''}{resultatNet.toLocaleString('fr-FR')} FCFA ({isProfitable ? '+' : ''}{rendementPct.toFixed(1)}%)
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
   const [metrics, setMetrics] = useState({ totalRevenue: 0, totalExpenses: 0, netResult: 0, pendingExpenses: 0 });
   const [transactions, setTransactions] = useState([]);
@@ -777,6 +859,7 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
       </div>
 
       {company.id === 'abayili_invest_rc_trading' && <PionexGridBotWidget />}
+      {company.id === 'abayili_invest_rpp_c1' && <RendementWidget company={company} />}
 
       {/* Vue Total Annuel */}
       {isTotal ? (
