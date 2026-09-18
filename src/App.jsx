@@ -869,12 +869,13 @@ const MONTH_LABELS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Ao
 // Répond à "est-ce que ça s'améliore ou ça empire", pas juste "où j'en suis".
 function EvolutionWidget({ company }) {
   const [transactions, setTransactions] = useState(null);
+  const [snapshots, setSnapshots] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
-    TransactionAPI.getAll(company.id)
-      .then(res => { if (!cancelled) setTransactions(res.data || []); })
+    Promise.all([TransactionAPI.getAll(company.id), ValuationAPI.getAll(company.id)])
+      .then(([txRes, snapRes]) => { if (!cancelled) { setTransactions(txRes.data || []); setSnapshots(snapRes.data || []); } })
       .catch(err => { if (!cancelled) setError(err.response?.data?.detail || err.message); });
     return () => { cancelled = true; };
   }, [company.id]);
@@ -887,7 +888,7 @@ function EvolutionWidget({ company }) {
       </div>
     );
   }
-  if (!transactions) {
+  if (!transactions || !snapshots) {
     return (
       <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50 mb-6 sm:mb-8 flex items-center gap-3">
         <Icons.Loader size={18} className="text-neutral-500" />
@@ -905,35 +906,60 @@ function EvolutionWidget({ company }) {
   const isPlacement = company.liquidity === 'placé';
 
   const validated = transactions.filter(t => t.status === 'validated' && t.date);
-  const byMonth = {};
-  validated.forEach(t => {
-    const month = t.date.substring(0, 7); // YYYY-MM
-    if (!byMonth[month]) byMonth[month] = { capital: 0, net: 0 };
-    const isCapitalMove = isPlacement && t.category === 'Apport Capital';
-    if (isCapitalMove) byMonth[month].capital += t.type === 'revenue' ? (t.amount || 0) : -(t.amount || 0);
-    else if (t.type === 'revenue') byMonth[month].net += (t.amount || 0);
-    else if (t.type === 'expense') byMonth[month].net -= (t.amount || 0);
-  });
+  const capitalMoves = validated
+    .filter(t => t.category === 'Apport Capital')
+    .map(t => ({ date: t.date, amount: t.type === 'revenue' ? (t.amount || 0) : -(t.amount || 0) }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const capitalNetAt = (date) => capitalMoves.filter(m => m.date <= date).reduce((sum, m) => sum + m.amount, 0);
 
-  const sortedMonths = Object.keys(byMonth).sort();
-  let runningCapital = 0;
-  let runningNet = 0;
-  let points = sortedMonths.map(month => {
-    runningCapital += byMonth[month].capital;
-    runningNet += byMonth[month].net;
-    const [y, m] = month.split('-').map(Number);
-    return {
-      label: `${MONTH_LABELS_FR[m - 1]} ${String(y).slice(2)}`,
-      value: isPlacement ? (runningCapital > 0 ? (runningNet / runningCapital) * 100 : null) : runningNet,
-    };
-  });
-  // En mode rendement %, pas de point tant qu'aucun capital n'a encore été investi
-  if (isPlacement) points = points.filter(p => p.value !== null);
+  const sortedSnapshots = [...snapshots].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const usingSnapshots = isPlacement && sortedSnapshots.length > 0;
+
+  let points;
+  if (usingSnapshots) {
+    // Les relevés manuels (valeur réelle connue à une date) donnent une image
+    // bien plus juste que les seules transactions "réalisées" - qui restent
+    // à 0 tant qu'aucun gain n'a été concrètement encaissé/retiré. On les
+    // utilise en priorité dès qu'il y en a au moins un.
+    points = sortedSnapshots
+      .map(s => {
+        const capitalAtDate = capitalNetAt(s.date);
+        return capitalAtDate > 0
+          ? { label: new Date(s.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }), value: ((s.value - capitalAtDate) / capitalAtDate) * 100 }
+          : null;
+      })
+      .filter(Boolean);
+  } else {
+    const byMonth = {};
+    validated.forEach(t => {
+      const month = t.date.substring(0, 7); // YYYY-MM
+      if (!byMonth[month]) byMonth[month] = { capital: 0, net: 0 };
+      const isCapitalMove = isPlacement && t.category === 'Apport Capital';
+      if (isCapitalMove) byMonth[month].capital += t.type === 'revenue' ? (t.amount || 0) : -(t.amount || 0);
+      else if (t.type === 'revenue') byMonth[month].net += (t.amount || 0);
+      else if (t.type === 'expense') byMonth[month].net -= (t.amount || 0);
+    });
+
+    const sortedMonths = Object.keys(byMonth).sort();
+    let runningCapital = 0;
+    let runningNet = 0;
+    points = sortedMonths.map(month => {
+      runningCapital += byMonth[month].capital;
+      runningNet += byMonth[month].net;
+      const [y, m] = month.split('-').map(Number);
+      return {
+        label: `${MONTH_LABELS_FR[m - 1]} ${String(y).slice(2)}`,
+        value: isPlacement ? (runningCapital > 0 ? (runningNet / runningCapital) * 100 : null) : runningNet,
+      };
+    });
+    // En mode rendement %, pas de point tant qu'aucun capital n'a encore été investi
+    if (isPlacement) points = points.filter(p => p.value !== null);
+  }
 
   if (points.length === 0) {
     return (
       <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50 mb-6 sm:mb-8 text-sm text-neutral-500">
-        Pas encore assez de transactions validées pour tracer une courbe.
+        Pas encore assez de données pour tracer une courbe{isPlacement ? ' - ajoute un relevé manuel ci-dessus ou attends une première transaction de gain' : ''}.
       </div>
     );
   }
@@ -947,7 +973,9 @@ function EvolutionWidget({ company }) {
         <div>
           <h3 className="text-sm text-neutral-400 uppercase tracking-wider">{isPlacement ? 'Évolution du rendement (%)' : 'Évolution — Résultat net cumulé'}</h3>
           <p className="text-[11px] text-neutral-600 mt-1">
-            {isPlacement ? 'Résultat net cumulé / capital investi cumulé, mois par mois' : 'Revenus moins dépenses, cumulés mois par mois'}
+            {isPlacement
+              ? (usingSnapshots ? 'Basé sur tes relevés manuels de valeur (plus précis que les seuls gains réalisés)' : 'Résultat net cumulé / capital investi cumulé, mois par mois')
+              : 'Revenus moins dépenses, cumulés mois par mois'}
           </p>
         </div>
         <span className={`text-sm font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
