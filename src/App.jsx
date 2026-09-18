@@ -1208,7 +1208,13 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
 
       {company.id === 'abayili_invest_rc_trading' && <PionexGridBotWidget />}
       {company.liquidity === 'placé' && <RendementWidget company={company} />}
-      {company.liquidity === 'placé' && <ValuationSnapshotWidget company={company} />}
+      {/* Relevé manuel : uniquement pour les placements sans API ET sans
+          transactions décomposables (le FCP - un fonds tiers, on ne peut
+          pas y noter de "transaction de gain" comme pour un pari ou une
+          vente crypto). RC Trading a l'API Pionex, RC/RPP se suivent par
+          transactions classiques (achat/vente, gain/perte) - pas besoin
+          d'un relevé pour eux, juste noter les transactions au fil de l'eau. */}
+      {company.id === 'abayili_invest_fcp' && <ValuationSnapshotWidget company={company} />}
       <EvolutionWidget company={company} />
 
       {/* Vue Total Annuel */}
