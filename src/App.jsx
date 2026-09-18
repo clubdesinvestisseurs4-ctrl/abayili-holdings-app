@@ -810,7 +810,7 @@ function LiveWalletBalancesWidget() {
           <p className="text-[11px] text-neutral-600 mt-1">Ce qui existe réellement aujourd'hui sur ces comptes (pas un historique de transactions)</p>
         </div>
         {(binance || wallet) && (
-          <span className="text-sm font-medium text-white">{totalFcfa.toLocaleString('fr-FR')} FCFA</span>
+          <span className="text-sm font-medium text-white">{Math.round(totalFcfa).toLocaleString('fr-FR')} FCFA</span>
         )}
       </div>
 
@@ -823,7 +823,7 @@ function LiveWalletBalancesWidget() {
             <p className="text-xs text-neutral-500 flex items-center gap-2"><Icons.Loader size={13} />Chargement...</p>
           ) : (
             <>
-              <p className="text-sm text-white mb-1.5">{binance.totalFcfa.toLocaleString('fr-FR')} FCFA <span className="text-neutral-500">({binance.totalUsd.toFixed(2)} $)</span></p>
+              <p className="text-sm text-white mb-1.5">{Math.round(binance.totalFcfa).toLocaleString('fr-FR')} FCFA <span className="text-neutral-500">({binance.totalUsd.toFixed(2)} $)</span></p>
               <div className="space-y-0.5">
                 {binance.holdings.slice(0, 5).map(h => (
                   <p key={h.asset} className="text-[11px] text-neutral-500">{h.asset} : {h.amount.toFixed(6)} (≈{h.usdValue.toFixed(2)} $)</p>
@@ -840,7 +840,7 @@ function LiveWalletBalancesWidget() {
             <p className="text-xs text-neutral-500 flex items-center gap-2"><Icons.Loader size={13} />Chargement...</p>
           ) : (
             <>
-              <p className="text-sm text-white mb-1.5">{wallet.fcfaValue.toLocaleString('fr-FR')} FCFA <span className="text-neutral-500">({wallet.usdValue.toFixed(2)} $)</span></p>
+              <p className="text-sm text-white mb-1.5">{Math.round(wallet.fcfaValue).toLocaleString('fr-FR')} FCFA <span className="text-neutral-500">({wallet.usdValue.toFixed(2)} $)</span></p>
               <p className="text-[11px] text-neutral-500">{wallet.ethBalance.toFixed(6)} ETH</p>
               <p className="text-[10px] text-neutral-600 mt-1">{wallet.note}</p>
             </>
