@@ -320,6 +320,16 @@ export const PionexAPI = {
   getGridBotStatus: () => api.get('/pionex/grid-bot/status'),
 };
 
+// ==================== VALUATIONS API ====================
+export const ValuationAPI = {
+  /**
+   * Relevés de valeur manuels (placements sans API, ex: FCP via Jamo/NSIA)
+   */
+  getAll: (companyId) => api.get(`/valuations/${companyId}`),
+  create: (data) => api.post('/valuations', data),
+  delete: (id) => api.delete(`/valuations/${id}`),
+};
+
 // ==================== USERS API ====================
 export const UserAPI = {
   /**

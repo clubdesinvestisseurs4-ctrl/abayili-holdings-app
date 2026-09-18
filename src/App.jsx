@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { TransactionAPI, BudgetAPI, ObjectiveAPI, AnalyticsAPI, PionexAPI } from './services/api';
+import { TransactionAPI, BudgetAPI, ObjectiveAPI, AnalyticsAPI, PionexAPI, ValuationAPI } from './services/api';
 
 // ==================== ICONS ====================
 const Icons = {
@@ -54,23 +54,23 @@ const COMPANIES = {
   // propre résultat, même si le capital du second vient du premier.
   abayili_invest_rc: { id: 'abayili_invest_rc', parentId: 'abayili_invest', name: 'Réseau Cryptos — Actifs', shortName: 'RC', description: 'Abayili Investissement — Achat/détention d\'actifs crypto', icon: 'TrendingUp', liquidity: 'placé',
     revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
-    expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
+    expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }, { id: 'apport_capital_retrait', name: 'Apport Capital', icon: '🏦' }]
   },
   abayili_invest_rc_trading: { id: 'abayili_invest_rc_trading', parentId: 'abayili_invest', name: 'Réseau Cryptos — Trading', shortName: 'RC Trading', description: 'Abayili Investissement — Trading actif crypto', icon: 'BarChart3', liquidity: 'placé',
     revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
-    expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
+    expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }, { id: 'apport_capital_retrait', name: 'Apport Capital', icon: '🏦' }]
   },
   abayili_invest_fcp: { id: 'abayili_invest_fcp', parentId: 'abayili_invest', name: 'FCP', shortName: 'FCP', description: 'Abayili Investissement — Département Capital Risque', icon: 'Layers', liquidity: 'placé',
     revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
-    expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
+    expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }, { id: 'apport_capital_retrait', name: 'Apport Capital', icon: '🏦' }]
   },
   abayili_invest_rta: { id: 'abayili_invest_rta', parentId: 'abayili_invest', name: 'RTA', shortName: 'RTA', description: 'Abayili Investissement — Département Capital Risque', icon: 'BarChart3', liquidity: 'placé',
     revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
-    expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }]
+    expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '💼' }, { id: 'apport_capital_retrait', name: 'Apport Capital', icon: '🏦' }]
   },
   abayili_invest_rpp_c1: { id: 'abayili_invest_rpp_c1', parentId: 'abayili_invest', name: 'Réseau Parieurs Pro — Compte 1', shortName: 'RPP C1', description: 'Abayili Investissement — Département Capital Risque', icon: 'Target', liquidity: 'placé',
     revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
-    expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }]
+    expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'apport_capital_retrait', name: 'Apport Capital', icon: '🏦' }]
   },
   abayili_consulting: { id: 'abayili_consulting', name: 'Abayili Consulting', shortName: 'AC', description: 'Consulting, Formation & Conférences', icon: 'GraduationCap', liquidity: 'cash',
     revenueCategories: [{ id: 'formations', name: 'Ventes de Formations', icon: '📚' }, { id: 'consulting', name: 'Missions Consulting', icon: '💼' }, { id: 'conferences', name: 'Conférences', icon: '🎤' }, { id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
@@ -807,15 +807,22 @@ function RendementWidget({ company }) {
     );
   }
 
+  // "Apport Capital" est un mouvement de capital (apport si revenu, retrait
+  // si dépense) - ni un gain, ni une charge. Un retrait de capital déjà
+  // utilisé ailleurs ne doit pas compter comme une perte de l'activité.
   const validated = transactions.filter(t => t.status === 'validated');
-  const capitalInvesti = validated
+  const apports = validated
     .filter(t => t.type === 'revenue' && t.category === 'Apport Capital')
     .reduce((sum, t) => sum + (t.amount || 0), 0);
+  const retraits = validated
+    .filter(t => t.type === 'expense' && t.category === 'Apport Capital')
+    .reduce((sum, t) => sum + (t.amount || 0), 0);
+  const capitalInvesti = apports - retraits;
   const gainsReels = validated
     .filter(t => t.type === 'revenue' && t.category !== 'Apport Capital')
     .reduce((sum, t) => sum + (t.amount || 0), 0);
   const charges = validated
-    .filter(t => t.type === 'expense')
+    .filter(t => t.type === 'expense' && t.category !== 'Apport Capital')
     .reduce((sum, t) => sum + (t.amount || 0), 0);
   const resultatNet = gainsReels - charges;
   const rendementPct = capitalInvesti > 0 ? (resultatNet / capitalInvesti) * 100 : 0;
@@ -902,10 +909,10 @@ function EvolutionWidget({ company }) {
   validated.forEach(t => {
     const month = t.date.substring(0, 7); // YYYY-MM
     if (!byMonth[month]) byMonth[month] = { capital: 0, net: 0 };
-    const isCapital = isPlacement && t.type === 'revenue' && t.category === 'Apport Capital';
-    if (isCapital) byMonth[month].capital += (t.amount || 0);
+    const isCapitalMove = isPlacement && t.category === 'Apport Capital';
+    if (isCapitalMove) byMonth[month].capital += t.type === 'revenue' ? (t.amount || 0) : -(t.amount || 0);
     else if (t.type === 'revenue') byMonth[month].net += (t.amount || 0);
-    if (t.type === 'expense') byMonth[month].net -= (t.amount || 0);
+    else if (t.type === 'expense') byMonth[month].net -= (t.amount || 0);
   });
 
   const sortedMonths = Object.keys(byMonth).sort();
@@ -948,6 +955,157 @@ function EvolutionWidget({ company }) {
         </span>
       </div>
       <EvolutionChart points={points} formatValue={isPlacement ? (v) => `${v.toFixed(0)}%` : (v) => `${(v / 1000).toFixed(1)}k`} />
+    </div>
+  );
+}
+
+// Relevés de valeur manuels - pour les placements gérés par un tiers sans
+// API disponible (ex: FCP via Jamo/NSIA, contrairement au bot Pionex qui a
+// sa propre intégration live). L'utilisateur entre "à telle date, ça vaut
+// tel montant" de temps en temps ; le rendement est calculé automatiquement
+// à partir de ça et du capital net déjà apporté (transactions "Apport
+// Capital"), sans jamais toucher au grand livre des transactions.
+function ValuationSnapshotWidget({ company }) {
+  const [snapshots, setSnapshots] = useState(null);
+  const [transactions, setTransactions] = useState(null);
+  const [error, setError] = useState(null);
+  const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], value: '', note: '' });
+  const [submitting, setSubmitting] = useState(false);
+
+  const load = () => {
+    Promise.all([ValuationAPI.getAll(company.id), TransactionAPI.getAll(company.id)])
+      .then(([snapRes, txRes]) => {
+        setSnapshots(snapRes.data || []);
+        setTransactions(txRes.data || []);
+      })
+      .catch(err => setError(err.response?.data?.detail || err.message));
+  };
+
+  useEffect(() => { load(); }, [company.id]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.value) return;
+    setSubmitting(true);
+    try {
+      await ValuationAPI.create({ companyId: company.id, date: form.date, value: parseFloat(form.value), note: form.note });
+      setForm({ date: new Date().toISOString().split('T')[0], value: '', note: '' });
+      load();
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    await ValuationAPI.delete(id);
+    load();
+  };
+
+  if (error) {
+    return (
+      <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50 mb-6 sm:mb-8 text-sm text-neutral-500">
+        <Icons.AlertTriangle size={14} className="inline mr-1.5 text-amber-400" />
+        Relevés manuels indisponibles ({error}).
+      </div>
+    );
+  }
+  if (!snapshots || !transactions) {
+    return (
+      <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50 mb-6 sm:mb-8 flex items-center gap-3">
+        <Icons.Loader size={18} className="text-neutral-500" />
+        <span className="text-sm text-neutral-500">Chargement des relevés...</span>
+      </div>
+    );
+  }
+
+  // Capital net apporté (apports - retraits) cumulé jusqu'à une date donnée
+  const capitalMoves = transactions
+    .filter(t => t.status === 'validated' && t.category === 'Apport Capital' && t.date)
+    .map(t => ({ date: t.date, amount: t.type === 'revenue' ? (t.amount || 0) : -(t.amount || 0) }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const capitalNetAt = (date) => capitalMoves.filter(m => m.date <= date).reduce((sum, m) => sum + m.amount, 0);
+  const capitalNetActuel = capitalMoves.reduce((sum, m) => sum + m.amount, 0);
+
+  const sortedSnapshots = [...snapshots].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const points = sortedSnapshots
+    .map(s => {
+      const capitalAtDate = capitalNetAt(s.date);
+      return capitalAtDate > 0
+        ? { label: new Date(s.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }), value: ((s.value - capitalAtDate) / capitalAtDate) * 100 }
+        : null;
+    })
+    .filter(Boolean);
+
+  const latest = sortedSnapshots[sortedSnapshots.length - 1];
+  const gainLatent = latest ? latest.value - capitalNetActuel : 0;
+  const rendementLatentPct = latest && capitalNetActuel > 0 ? (gainLatent / capitalNetActuel) * 100 : 0;
+  const isPositive = gainLatent >= 0;
+
+  return (
+    <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 mb-6 sm:mb-8 overflow-hidden p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Relevés manuels de valeur</h3>
+          <p className="text-[11px] text-neutral-600 mt-1">Pas d'API pour ce placement - tu entres la valeur toi-même, le rendement se calcule automatiquement</p>
+        </div>
+      </div>
+
+      {latest && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+          <div>
+            <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Valeur actuelle connue</p>
+            <p className="text-sm text-white">{latest.value.toLocaleString('fr-FR')} FCFA</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Capital net apporté</p>
+            <p className="text-sm text-neutral-300">{capitalNetActuel.toLocaleString('fr-FR')} FCFA</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Gain latent</p>
+            <p className={`text-sm ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>{isPositive ? '+' : ''}{gainLatent.toLocaleString('fr-FR')} FCFA</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Rendement latent</p>
+            <p className={`text-sm font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>{isPositive ? '+' : ''}{rendementLatentPct.toFixed(1)}%</p>
+          </div>
+        </div>
+      )}
+
+      {points.length > 1 && <div className="mb-5"><EvolutionChart points={points} formatValue={(v) => `${v.toFixed(0)}%`} /></div>}
+
+      {sortedSnapshots.length > 0 && (
+        <div className="mb-5 space-y-1.5">
+          {[...sortedSnapshots].reverse().map(s => (
+            <div key={s.id} className="flex items-center justify-between text-xs text-neutral-400 bg-neutral-800/30 rounded-lg px-3 py-2">
+              <span>{new Date(s.date).toLocaleDateString('fr-FR')} — {s.value.toLocaleString('fr-FR')} FCFA{s.note ? ` (${s.note})` : ''}</span>
+              <button onClick={() => handleDelete(s.id)} className="text-neutral-600 hover:text-red-400 transition-colors">
+                <Icons.Trash2 size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2">
+        <div>
+          <label className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 block">Date</label>
+          <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white focus:outline-none focus:border-neutral-600" required />
+        </div>
+        <div>
+          <label className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 block">Valeur totale (FCFA)</label>
+          <input type="number" step="0.01" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} placeholder="ex: 1384" className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-32 focus:outline-none focus:border-neutral-600" required />
+        </div>
+        <div className="flex-1 min-w-[120px]">
+          <label className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 block">Note (optionnel)</label>
+          <input type="text" value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="ex: relevé app Jamo" className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-full focus:outline-none focus:border-neutral-600" />
+        </div>
+        <button type="submit" disabled={submitting} className="flex items-center gap-1.5 px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm hover:bg-neutral-200 transition-colors disabled:opacity-50">
+          <Icons.Plus size={14} />{submitting ? '...' : 'Ajouter'}
+        </button>
+      </form>
     </div>
   );
 }
@@ -1022,6 +1180,7 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
 
       {company.id === 'abayili_invest_rc_trading' && <PionexGridBotWidget />}
       {company.liquidity === 'placé' && <RendementWidget company={company} />}
+      {company.liquidity === 'placé' && <ValuationSnapshotWidget company={company} />}
       <EvolutionWidget company={company} />
 
       {/* Vue Total Annuel */}
