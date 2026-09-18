@@ -893,18 +893,28 @@ function EvolutionWidget({ company }) {
   const byMonth = {};
   validated.forEach(t => {
     const month = t.date.substring(0, 7); // YYYY-MM
-    if (!byMonth[month]) byMonth[month] = 0;
-    if (t.type === 'revenue' && t.category !== 'Apport Capital') byMonth[month] += (t.amount || 0);
-    if (t.type === 'expense') byMonth[month] -= (t.amount || 0);
+    if (!byMonth[month]) byMonth[month] = { capital: 0, net: 0 };
+    if (t.type === 'revenue' && t.category === 'Apport Capital') byMonth[month].capital += (t.amount || 0);
+    if (t.type === 'revenue' && t.category !== 'Apport Capital') byMonth[month].net += (t.amount || 0);
+    if (t.type === 'expense') byMonth[month].net -= (t.amount || 0);
   });
 
   const sortedMonths = Object.keys(byMonth).sort();
-  let running = 0;
-  const points = sortedMonths.map(month => {
-    running += byMonth[month];
-    const [y, m] = month.split('-').map(Number);
-    return { label: `${MONTH_LABELS_FR[m - 1]} ${String(y).slice(2)}`, value: running };
-  });
+  let runningCapital = 0;
+  let runningNet = 0;
+  const points = sortedMonths
+    .map(month => {
+      runningCapital += byMonth[month].capital;
+      runningNet += byMonth[month].net;
+      const [y, m] = month.split('-').map(Number);
+      return {
+        label: `${MONTH_LABELS_FR[m - 1]} ${String(y).slice(2)}`,
+        capital: runningCapital,
+        value: runningCapital > 0 ? (runningNet / runningCapital) * 100 : null,
+      };
+    })
+    // Pas de rendement % tant qu'aucun capital n'a encore été investi
+    .filter(p => p.value !== null);
 
   if (points.length === 0) {
     return (
@@ -921,14 +931,14 @@ function EvolutionWidget({ company }) {
     <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 mb-6 sm:mb-8 overflow-hidden p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Évolution — Résultat net cumulé</h3>
-          <p className="text-[11px] text-neutral-600 mt-1">Gains réels moins charges, mois par mois (capital investi exclu)</p>
+          <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Évolution du rendement (%)</h3>
+          <p className="text-[11px] text-neutral-600 mt-1">Résultat net cumulé / capital investi cumulé, mois par mois</p>
         </div>
         <span className={`text-sm font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-          {isPositive ? '+' : ''}{last.toLocaleString('fr-FR')} FCFA
+          {isPositive ? '+' : ''}{last.toFixed(1)}%
         </span>
       </div>
-      <EvolutionChart points={points} formatValue={(v) => `${(v / 1000).toFixed(1)}k`} />
+      <EvolutionChart points={points} formatValue={(v) => `${v.toFixed(0)}%`} />
     </div>
   );
 }
