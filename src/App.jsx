@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { TransactionAPI, BudgetAPI, ObjectiveAPI, AnalyticsAPI } from './services/api';
+import { TransactionAPI, BudgetAPI, ObjectiveAPI, AnalyticsAPI, PionexAPI } from './services/api';
 
 // ==================== ICONS ====================
 const Icons = {
