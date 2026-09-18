@@ -609,6 +609,8 @@ function YearlyTotalView({ company }) {
     </div>
   );
 
+  const isPlacement = company.liquidity === 'placé';
+
   return (
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -623,12 +625,18 @@ function YearlyTotalView({ company }) {
           icon="ArrowDownRight"
         />
         <MetricCard
-          label="Résultat Net Global"
+          label={isPlacement ? 'Flux de Trésorerie Net (pas le rendement)' : 'Résultat Net Global'}
           value={`${netResult >= 0 ? '+' : ''}${netResult.toLocaleString('fr-FR')} FCFA`}
           positive={netResult >= 0}
           icon="TrendingUp"
         />
       </div>
+      {isPlacement && (
+        <p className="text-[11px] text-neutral-500 -mt-4 mb-8">
+          <Icons.AlertTriangle size={12} className="inline mr-1 text-amber-400" />
+          Ce chiffre additionne TOUTES les transactions (y compris les achats d'actifs et mouvements de capital entre départements) - ce n'est pas une mesure de rentabilité. Pour ça, voir le widget "Rendement" plus haut sur le tableau de bord.
+        </p>
+      )}
 
       <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b border-neutral-800/50">
