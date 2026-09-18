@@ -693,6 +693,17 @@ function PionexGridBotWidget() {
           <p className="text-sm text-neutral-300">{status.baseAmount.toFixed(6)} BTC + {status.quoteAmount.toFixed(2)} $</p>
         </div>
       </div>
+      {status.autoSync && (
+        <div className="px-6 pb-4 -mt-2">
+          <p className="text-[10px] text-neutral-600">
+            {status.autoSync.synced
+              ? `Synchro auto : transaction de ${status.autoSync.deltaUsd >= 0 ? '+' : ''}${status.autoSync.deltaUsd.toFixed(2)} $ créée dans le grand livre.`
+              : status.autoSync.nextSyncAt
+                ? `Prochaine synchro auto vers le grand livre : ${new Date(status.autoSync.nextSyncAt).toLocaleDateString('fr-FR')}.`
+                : `Synchro auto : ${status.autoSync.reason}.`}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
