@@ -2222,13 +2222,43 @@ function PortfolioGlobalPage() {
       const allEntities = Object.values(COMPANIES);
       const results = await Promise.all(
         allEntities.map(async (comp) => {
-          let revenue = 0, expense = 0;
+          let txs = [];
           try {
             const res = await TransactionAPI.getAll(comp.id);
-            const txs = (res.data || []).filter(t => t.status === 'validated');
-            revenue = txs.filter(t => t.type === 'revenue').reduce((s, t) => s + (t.amount || 0), 0);
-            expense = txs.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
-          } catch { /* garde revenue/expense à 0 si l'entité n'a pas encore de transactions */ }
+            txs = (res.data || []).filter(t => t.status === 'validated' && t.date);
+          } catch { /* pas encore de transactions pour cette entité */ }
+
+          const revenue = txs.filter(t => t.type === 'revenue').reduce((s, t) => s + (t.amount || 0), 0);
+          const expense = txs.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
+
+          // Pour le capital placé : sépare le capital (apports/retraits) du
+          // gain réel, même logique que RendementWidget - nécessaire pour
+          // le Rendement Global du Capital Risque plus bas.
+          const isPlacement = (comp.liquidity || 'cash') === 'placé';
+          const apports = isPlacement ? txs.filter(t => t.type === 'revenue' && t.category === 'Apport Capital').reduce((s, t) => s + (t.amount || 0), 0) : 0;
+          const retraits = isPlacement ? txs.filter(t => t.type === 'expense' && t.category === 'Apport Capital').reduce((s, t) => s + (t.amount || 0), 0) : 0;
+          const capitalNet = apports - retraits;
+          const gainsReels = isPlacement ? txs.filter(t => t.type === 'revenue' && t.category !== 'Apport Capital').reduce((s, t) => s + (t.amount || 0), 0) : 0;
+          const chargesReelles = isPlacement ? txs.filter(t => t.type === 'expense' && t.category !== 'Apport Capital').reduce((s, t) => s + (t.amount || 0), 0) : 0;
+          let gainsCR = gainsReels - chargesReelles;
+
+          let cash = revenue - expense;
+
+          // FCP n'a pas de gain "réalisé" (aucune API, aucun retrait
+          // profitable pour l'instant) - son relevé manuel de valeur est la
+          // seule source fiable de sa performance réelle, donc on l'utilise
+          // à la place du calcul par transactions pour ce cas précis.
+          if (comp.id === 'abayili_invest_fcp') {
+            try {
+              const snapRes = await ValuationAPI.getAll(comp.id);
+              const snaps = (snapRes.data || []).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+              if (snaps.length > 0) {
+                const latestValue = snaps[snaps.length - 1].value;
+                gainsCR = latestValue - capitalNet;
+                cash = latestValue;
+              }
+            } catch { /* pas de relevé - reste sur le calcul par transactions */ }
+          }
 
           let reference = null;
           try {
@@ -2236,9 +2266,8 @@ function PortfolioGlobalPage() {
             reference = refRes.data || null;
           } catch { /* pas de référence renseignée pour cette entité */ }
 
-          const cash = revenue - expense;
           const ecart = reference ? cash - reference.cash : null;
-          return { id: comp.id, name: comp.name, liquidity: comp.liquidity || 'cash', revenue, expense, cash, reference, ecart };
+          return { id: comp.id, name: comp.name, liquidity: comp.liquidity || 'cash', revenue, expense, cash, capitalNet, gainsCR, reference, ecart, txs };
         })
       );
       setEntityStats(results);
@@ -2255,6 +2284,41 @@ function PortfolioGlobalPage() {
   const totalPlace = placeEntities.reduce((s, e) => s + e.cash, 0);
   const entitiesWithReference = entityStats.filter(e => e.reference);
   const donutData = entityStats.filter(e => e.cash > 0).map(e => ({ name: e.name, value: e.cash }));
+
+  // --- Bilan Global / Rendement Global du fonds ---
+  // Le Capital Risque (RC, RC Trading, FCP, RTA, RPP) a une vraie base de
+  // capital investi -> un rendement % a du sens et se calcule en poolant
+  // gains et capital de toutes ces entités. Les sociétés opérationnelles
+  // (Consulting, AI for Afrika, Gourmandises) n'ont pas cette notion de
+  // capital apporté - leur contribution au fonds est leur résultat net,
+  // additionné en FCFA plutôt que mélangé dans un pourcentage qui n'aurait
+  // pas de sens sans base de comparaison commune.
+  const totalCapitalCR = placeEntities.reduce((s, e) => s + (e.capitalNet || 0), 0);
+  const totalGainsCR = placeEntities.reduce((s, e) => s + (e.gainsCR || 0), 0);
+  const rendementGlobalCRPct = totalCapitalCR > 0 ? (totalGainsCR / totalCapitalCR) * 100 : 0;
+  const creationValeurTotale = totalGainsCR + totalCash;
+
+  // Courbe d'évolution globale : cumul mensuel poolé de TOUTES les
+  // entités (gain réel du Capital Risque + résultat net des sociétés
+  // opérationnelles). Ne peut pas intégrer le relevé manuel du FCP (un
+  // seul point dans le temps, pas d'historique) - noté sous la courbe.
+  const byMonthGlobal = {};
+  entityStats.forEach(e => {
+    (e.txs || []).forEach(t => {
+      const month = t.date.substring(0, 7);
+      if (!byMonthGlobal[month]) byMonthGlobal[month] = 0;
+      if (e.liquidity === 'placé' && t.category === 'Apport Capital') return; // mouvement de capital, pas une performance
+      if (t.type === 'revenue') byMonthGlobal[month] += (t.amount || 0);
+      else if (t.type === 'expense') byMonthGlobal[month] -= (t.amount || 0);
+    });
+  });
+  const sortedGlobalMonths = Object.keys(byMonthGlobal).sort();
+  let runningGlobal = 0;
+  const globalEvolutionPoints = sortedGlobalMonths.map(month => {
+    runningGlobal += byMonthGlobal[month];
+    const [y, m] = month.split('-').map(Number);
+    return { label: `${MONTH_LABELS_FR[m - 1]} ${String(y).slice(2)}`, value: runningGlobal };
+  });
 
   if (loading) return (
     <div className="flex items-center justify-center py-16">
@@ -2316,7 +2380,42 @@ function PortfolioGlobalPage() {
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-6 sm:mb-8">
         <h2 className="text-xl sm:text-2xl font-light tracking-tight">Portefeuille Global</h2>
-        <p className="text-neutral-500 text-sm mt-1">Vue d'ensemble du holding — cash disponible et capital placé, tous départements et sociétés confondus</p>
+        <p className="text-neutral-500 text-sm mt-1">Bilan consolidé du fonds Abayili Investissement — toutes sociétés et départements confondus</p>
+      </div>
+
+      {/* Bilan Global / Rendement Global du fonds - vue "coup d'œil" qui
+          répond à "est-ce que le fonds, dans son ensemble, performe ?",
+          en plus du détail par entité plus bas. */}
+      <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 overflow-hidden mb-8">
+        <div className="p-6 pb-4">
+          <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Bilan Global du Fonds</h3>
+          <p className="text-[11px] text-neutral-600 mt-1">Capital Risque (RC, RC Trading, FCP, RTA, RPP) poolé pour un rendement global, activités opérationnelles en résultat net séparé</p>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 px-6 pb-6">
+          <div>
+            <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Capital Risque investi</p>
+            <p className="text-sm text-white">{totalCapitalCR.toLocaleString('fr-FR')} FCFA</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Rendement Global (Capital Risque)</p>
+            <p className={`text-sm font-medium ${totalGainsCR >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{totalGainsCR >= 0 ? '+' : ''}{totalGainsCR.toLocaleString('fr-FR')} FCFA ({totalGainsCR >= 0 ? '+' : ''}{rendementGlobalCRPct.toFixed(1)}%)</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Résultat Net Opérationnel</p>
+            <p className={`text-sm ${totalCash >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{totalCash >= 0 ? '+' : ''}{totalCash.toLocaleString('fr-FR')} FCFA</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Création de Valeur Totale</p>
+            <p className={`text-sm font-medium ${creationValeurTotale >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{creationValeurTotale >= 0 ? '+' : ''}{creationValeurTotale.toLocaleString('fr-FR')} FCFA</p>
+          </div>
+        </div>
+        {globalEvolutionPoints.length > 0 && (
+          <div className="px-6 pb-6">
+            <p className="text-[11px] text-neutral-500 mb-3">Évolution cumulée (gains Capital Risque réalisés + résultat net opérationnel), mois par mois</p>
+            <EvolutionChart points={globalEvolutionPoints} formatValue={(v) => `${(v / 1000).toFixed(1)}k`} />
+            <p className="text-[10px] text-neutral-600 mt-2">Le gain latent du FCP (relevé manuel, voir sa page dédiée) n'est pas dans cette courbe - un seul relevé ne fait pas d'historique.</p>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
@@ -2363,7 +2462,7 @@ function MainLayout() {
   };
 
   const [activeCompany, setActiveCompany] = useState('abayili_invest');
-  const [activeView, setActiveView] = useState('dashboard');
+  const [activeView, setActiveView] = useState('portfolio_global');
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState({});
@@ -2392,9 +2491,13 @@ function MainLayout() {
     { id: 'portfolio_global', label: 'Portefeuille Global', Icon: Icons.PieChart }
   ];
 
-  // Réinitialiser le mois lors du changement d'entreprise
+  // Réinitialiser le mois lors du changement d'entreprise. Abayili
+  // Investissement est le holding/fonds qui chapeaute tout le reste - y
+  // arriver doit montrer directement le bilan consolidé (Portefeuille
+  // Global), pas juste sa propre activité directe (Commissions).
   const handleCompanyChange = (companyId) => {
     setActiveCompany(companyId);
+    setActiveView(companyId === 'abayili_invest' ? 'portfolio_global' : 'dashboard');
     setSelectedMonth(getCurrentMonth());
     setMobileMenuOpen(false);
   };
