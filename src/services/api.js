@@ -320,6 +320,22 @@ export const PionexAPI = {
   getGridBotStatus: () => api.get('/pionex/grid-bot/status'),
 };
 
+// ==================== BINANCE API ====================
+export const BinanceAPI = {
+  /**
+   * Solde spot Binance en direct (Réseau Cryptos - Actifs), converti en $/FCFA
+   */
+  getStatus: () => api.get('/binance/status'),
+};
+
+// ==================== WALLET (METAMASK) API ====================
+export const WalletAPI = {
+  /**
+   * Solde ETH natif du wallet MetaMask en direct (Réseau Cryptos - Actifs)
+   */
+  getStatus: () => api.get('/wallet/status'),
+};
+
 // ==================== VALUATIONS API ====================
 export const ValuationAPI = {
   /**

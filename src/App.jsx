@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { TransactionAPI, BudgetAPI, ObjectiveAPI, AnalyticsAPI, PionexAPI, ValuationAPI } from './services/api';
+import { TransactionAPI, BudgetAPI, ObjectiveAPI, AnalyticsAPI, PionexAPI, ValuationAPI, BinanceAPI, WalletAPI } from './services/api';
 
 // ==================== ICONS ====================
 const Icons = {
@@ -780,6 +780,77 @@ function PionexGridBotWidget() {
   );
 }
 
+// Solde live Binance + MetaMask (Réseau Cryptos - Actifs) - même principe
+// que le widget Pionex : lecture seule, montre juste ce qui existe
+// réellement aujourd'hui sur ces comptes, sans reconstituer un historique.
+function LiveWalletBalancesWidget() {
+  const [binance, setBinance] = useState(null);
+  const [binanceError, setBinanceError] = useState(null);
+  const [wallet, setWallet] = useState(null);
+  const [walletError, setWalletError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    BinanceAPI.getStatus()
+      .then(res => { if (!cancelled) setBinance(res.data); })
+      .catch(err => { if (!cancelled) setBinanceError(err.response?.data?.detail || err.message); });
+    WalletAPI.getStatus()
+      .then(res => { if (!cancelled) setWallet(res.data); })
+      .catch(err => { if (!cancelled) setWalletError(err.response?.data?.detail || err.message); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const totalFcfa = (binance?.totalFcfa || 0) + (wallet?.fcfaValue || 0);
+
+  return (
+    <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 mb-6 sm:mb-8 overflow-hidden">
+      <div className="flex items-center justify-between p-6 pb-4">
+        <div>
+          <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Soldes en direct — Binance + MetaMask</h3>
+          <p className="text-[11px] text-neutral-600 mt-1">Ce qui existe réellement aujourd'hui sur ces comptes (pas un historique de transactions)</p>
+        </div>
+        {(binance || wallet) && (
+          <span className="text-sm font-medium text-white">{totalFcfa.toLocaleString('fr-FR')} FCFA</span>
+        )}
+      </div>
+
+      <div className="px-6 pb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-2">Binance (spot)</p>
+          {binanceError ? (
+            <p className="text-xs text-neutral-500"><Icons.AlertTriangle size={12} className="inline mr-1 text-amber-400" />{binanceError}</p>
+          ) : !binance ? (
+            <p className="text-xs text-neutral-500 flex items-center gap-2"><Icons.Loader size={13} />Chargement...</p>
+          ) : (
+            <>
+              <p className="text-sm text-white mb-1.5">{binance.totalFcfa.toLocaleString('fr-FR')} FCFA <span className="text-neutral-500">({binance.totalUsd.toFixed(2)} $)</span></p>
+              <div className="space-y-0.5">
+                {binance.holdings.slice(0, 5).map(h => (
+                  <p key={h.asset} className="text-[11px] text-neutral-500">{h.asset} : {h.amount.toFixed(6)} (≈{h.usdValue.toFixed(2)} $)</p>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+        <div>
+          <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-2">MetaMask (ETH natif)</p>
+          {walletError ? (
+            <p className="text-xs text-neutral-500"><Icons.AlertTriangle size={12} className="inline mr-1 text-amber-400" />{walletError}</p>
+          ) : !wallet ? (
+            <p className="text-xs text-neutral-500 flex items-center gap-2"><Icons.Loader size={13} />Chargement...</p>
+          ) : (
+            <>
+              <p className="text-sm text-white mb-1.5">{wallet.fcfaValue.toLocaleString('fr-FR')} FCFA <span className="text-neutral-500">({wallet.usdValue.toFixed(2)} $)</span></p>
+              <p className="text-[11px] text-neutral-500">{wallet.ethBalance.toFixed(6)} ETH</p>
+              <p className="text-[10px] text-neutral-600 mt-1">{wallet.note}</p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Widget de rendement (ROI) - calculé à partir des transactions déjà
 // enregistrées, pas d'API externe (contrairement au bot Pionex). Répond à
 // "suis-je rentable ?" pour une entité "capital placé" : capital investi =
@@ -1224,6 +1295,7 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
       </div>
 
       {company.id === 'abayili_invest_rc_trading' && <PionexGridBotWidget />}
+      {company.id === 'abayili_invest_rc' && <LiveWalletBalancesWidget />}
       {company.liquidity === 'placé' && <RendementWidget company={company} />}
       {/* Relevé manuel : uniquement pour les placements sans API ET sans
           transactions décomposables (le FCP - un fonds tiers, on ne peut
