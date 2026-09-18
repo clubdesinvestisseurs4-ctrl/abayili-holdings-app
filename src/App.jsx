@@ -889,32 +889,39 @@ function EvolutionWidget({ company }) {
     );
   }
 
+  // Deux modes selon le type d'entité : les départements "capital placé" ont
+  // un Apport Capital distinct du gain réel -> on trace le rendement % (le
+  // même calcul que RendementWidget, mais dans le temps). Les sociétés
+  // opérationnelles ("cash") n'ont pas cette distinction - Apport Capital
+  // n'existe pas comme catégorie chez elles - donc on trace simplement le
+  // résultat net cumulé en FCFA, qui est le repère universellement lisible.
+  const isPlacement = company.liquidity === 'placé';
+
   const validated = transactions.filter(t => t.status === 'validated' && t.date);
   const byMonth = {};
   validated.forEach(t => {
     const month = t.date.substring(0, 7); // YYYY-MM
     if (!byMonth[month]) byMonth[month] = { capital: 0, net: 0 };
-    if (t.type === 'revenue' && t.category === 'Apport Capital') byMonth[month].capital += (t.amount || 0);
-    if (t.type === 'revenue' && t.category !== 'Apport Capital') byMonth[month].net += (t.amount || 0);
+    const isCapital = isPlacement && t.type === 'revenue' && t.category === 'Apport Capital';
+    if (isCapital) byMonth[month].capital += (t.amount || 0);
+    else if (t.type === 'revenue') byMonth[month].net += (t.amount || 0);
     if (t.type === 'expense') byMonth[month].net -= (t.amount || 0);
   });
 
   const sortedMonths = Object.keys(byMonth).sort();
   let runningCapital = 0;
   let runningNet = 0;
-  const points = sortedMonths
-    .map(month => {
-      runningCapital += byMonth[month].capital;
-      runningNet += byMonth[month].net;
-      const [y, m] = month.split('-').map(Number);
-      return {
-        label: `${MONTH_LABELS_FR[m - 1]} ${String(y).slice(2)}`,
-        capital: runningCapital,
-        value: runningCapital > 0 ? (runningNet / runningCapital) * 100 : null,
-      };
-    })
-    // Pas de rendement % tant qu'aucun capital n'a encore été investi
-    .filter(p => p.value !== null);
+  let points = sortedMonths.map(month => {
+    runningCapital += byMonth[month].capital;
+    runningNet += byMonth[month].net;
+    const [y, m] = month.split('-').map(Number);
+    return {
+      label: `${MONTH_LABELS_FR[m - 1]} ${String(y).slice(2)}`,
+      value: isPlacement ? (runningCapital > 0 ? (runningNet / runningCapital) * 100 : null) : runningNet,
+    };
+  });
+  // En mode rendement %, pas de point tant qu'aucun capital n'a encore été investi
+  if (isPlacement) points = points.filter(p => p.value !== null);
 
   if (points.length === 0) {
     return (
@@ -931,14 +938,16 @@ function EvolutionWidget({ company }) {
     <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 mb-6 sm:mb-8 overflow-hidden p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Évolution du rendement (%)</h3>
-          <p className="text-[11px] text-neutral-600 mt-1">Résultat net cumulé / capital investi cumulé, mois par mois</p>
+          <h3 className="text-sm text-neutral-400 uppercase tracking-wider">{isPlacement ? 'Évolution du rendement (%)' : 'Évolution — Résultat net cumulé'}</h3>
+          <p className="text-[11px] text-neutral-600 mt-1">
+            {isPlacement ? 'Résultat net cumulé / capital investi cumulé, mois par mois' : 'Revenus moins dépenses, cumulés mois par mois'}
+          </p>
         </div>
         <span className={`text-sm font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-          {isPositive ? '+' : ''}{last.toFixed(1)}%
+          {isPositive ? '+' : ''}{isPlacement ? `${last.toFixed(1)}%` : `${last.toLocaleString('fr-FR')} FCFA`}
         </span>
       </div>
-      <EvolutionChart points={points} formatValue={(v) => `${v.toFixed(0)}%`} />
+      <EvolutionChart points={points} formatValue={isPlacement ? (v) => `${v.toFixed(0)}%` : (v) => `${(v / 1000).toFixed(1)}k`} />
     </div>
   );
 }
@@ -1012,8 +1021,8 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
       </div>
 
       {company.id === 'abayili_invest_rc_trading' && <PionexGridBotWidget />}
-      {company.id === 'abayili_invest_rpp_c1' && <RendementWidget company={company} />}
-      {(company.id === 'abayili_invest_rc_trading' || company.id === 'abayili_invest_rpp_c1') && <EvolutionWidget company={company} />}
+      {company.liquidity === 'placé' && <RendementWidget company={company} />}
+      <EvolutionWidget company={company} />
 
       {/* Vue Total Annuel */}
       {isTotal ? (
