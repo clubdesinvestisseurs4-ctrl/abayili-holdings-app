@@ -810,6 +810,12 @@ function RendementWidget({ company }) {
   // "Apport Capital" est un mouvement de capital (apport si revenu, retrait
   // si dépense) - ni un gain, ni une charge. Un retrait de capital déjà
   // utilisé ailleurs ne doit pas compter comme une perte de l'activité.
+  // "Charges Financières RESERVES" sert à enregistrer les achats d'actifs
+  // (ex: achat de cryptos avec le capital apporté) - l'argent n'est pas
+  // perdu, juste transformé en une autre forme d'actif ; compter ça comme
+  // une charge ferait passer un simple réinvestissement pour une perte
+  // (constaté concrètement sur RC Actifs : rendement à -100% alors que le
+  // capital était juste investi en cryptos, pas envolé).
   const validated = transactions.filter(t => t.status === 'validated');
   const apports = validated
     .filter(t => t.type === 'revenue' && t.category === 'Apport Capital')
@@ -818,11 +824,12 @@ function RendementWidget({ company }) {
     .filter(t => t.type === 'expense' && t.category === 'Apport Capital')
     .reduce((sum, t) => sum + (t.amount || 0), 0);
   const capitalInvesti = apports - retraits;
+  const isCapitalOrReserve = (t) => t.category === 'Apport Capital' || t.category === 'Charges Financières RESERVES';
   const gainsReels = validated
-    .filter(t => t.type === 'revenue' && t.category !== 'Apport Capital')
+    .filter(t => t.type === 'revenue' && !isCapitalOrReserve(t))
     .reduce((sum, t) => sum + (t.amount || 0), 0);
   const charges = validated
-    .filter(t => t.type === 'expense' && t.category !== 'Apport Capital')
+    .filter(t => t.type === 'expense' && !isCapitalOrReserve(t))
     .reduce((sum, t) => sum + (t.amount || 0), 0);
   const resultatNet = gainsReels - charges;
   const rendementPct = capitalInvesti > 0 ? (resultatNet / capitalInvesti) * 100 : 0;
@@ -935,7 +942,9 @@ function EvolutionWidget({ company }) {
       const month = t.date.substring(0, 7); // YYYY-MM
       if (!byMonth[month]) byMonth[month] = { capital: 0, net: 0 };
       const isCapitalMove = isPlacement && t.category === 'Apport Capital';
+      const isAssetReallocation = isPlacement && t.category === 'Charges Financières RESERVES';
       if (isCapitalMove) byMonth[month].capital += t.type === 'revenue' ? (t.amount || 0) : -(t.amount || 0);
+      else if (isAssetReallocation) { /* achat d'actif, pas une perte - exclu du calcul */ }
       else if (t.type === 'revenue') byMonth[month].net += (t.amount || 0);
       else if (t.type === 'expense') byMonth[month].net -= (t.amount || 0);
     });
@@ -2233,16 +2242,26 @@ function PortfolioGlobalPage() {
 
           // Pour le capital placé : sépare le capital (apports/retraits) du
           // gain réel, même logique que RendementWidget - nécessaire pour
-          // le Rendement Global du Capital Risque plus bas.
+          // le Rendement Global du Capital Risque plus bas. "Charges
+          // Financières RESERVES" = achat d'actifs (ex: cryptos) avec le
+          // capital déjà compté - exclu, sinon ça compte comme une perte un
+          // argent juste transformé en une autre forme d'actif (constaté
+          // concrètement sur RC Actifs : -100% de rendement affiché alors
+          // que le capital était juste investi, pas perdu).
           const isPlacement = (comp.liquidity || 'cash') === 'placé';
+          const isCapitalOrReserve = (t) => t.category === 'Apport Capital' || t.category === 'Charges Financières RESERVES';
           const apports = isPlacement ? txs.filter(t => t.type === 'revenue' && t.category === 'Apport Capital').reduce((s, t) => s + (t.amount || 0), 0) : 0;
           const retraits = isPlacement ? txs.filter(t => t.type === 'expense' && t.category === 'Apport Capital').reduce((s, t) => s + (t.amount || 0), 0) : 0;
           const capitalNet = apports - retraits;
-          const gainsReels = isPlacement ? txs.filter(t => t.type === 'revenue' && t.category !== 'Apport Capital').reduce((s, t) => s + (t.amount || 0), 0) : 0;
-          const chargesReelles = isPlacement ? txs.filter(t => t.type === 'expense' && t.category !== 'Apport Capital').reduce((s, t) => s + (t.amount || 0), 0) : 0;
+          const gainsReels = isPlacement ? txs.filter(t => t.type === 'revenue' && !isCapitalOrReserve(t)).reduce((s, t) => s + (t.amount || 0), 0) : 0;
+          const chargesReelles = isPlacement ? txs.filter(t => t.type === 'expense' && !isCapitalOrReserve(t)).reduce((s, t) => s + (t.amount || 0), 0) : 0;
           let gainsCR = gainsReels - chargesReelles;
 
-          let cash = revenue - expense;
+          // Pour une entité "capital placé", le cash affiché doit être la
+          // VALEUR totale (capital + gain), pas juste le résidu de FCFA non
+          // encore investi (revenue - expense sous-évalue massivement dès
+          // qu'une partie du capital est passée en cryptos, ex: RC Actifs).
+          let cash = isPlacement ? capitalNet + gainsCR : revenue - expense;
 
           // FCP n'a pas de gain "réalisé" (aucune API, aucun retrait
           // profitable pour l'instant) - son relevé manuel de valeur est la
@@ -2307,7 +2326,7 @@ function PortfolioGlobalPage() {
     (e.txs || []).forEach(t => {
       const month = t.date.substring(0, 7);
       if (!byMonthGlobal[month]) byMonthGlobal[month] = 0;
-      if (e.liquidity === 'placé' && t.category === 'Apport Capital') return; // mouvement de capital, pas une performance
+      if (e.liquidity === 'placé' && (t.category === 'Apport Capital' || t.category === 'Charges Financières RESERVES')) return; // mouvement de capital ou achat d'actif, pas une performance
       if (t.type === 'revenue') byMonthGlobal[month] += (t.amount || 0);
       else if (t.type === 'expense') byMonthGlobal[month] -= (t.amount || 0);
     });
