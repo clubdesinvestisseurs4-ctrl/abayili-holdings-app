@@ -351,6 +351,70 @@ function CategoryDistributionChart({ transactions }) {
   );
 }
 
+// Courbe d'évolution (ligne + aire) - pas de librairie externe, même
+// convention que DonutChart/CategoryDistributionChart plus haut (SVG à la
+// main). Trace une série chronologique (ex: résultat net cumulé mois par
+// mois) avec une ligne colorée selon le signe de la dernière valeur.
+function EvolutionChart({ points, formatValue = (v) => v.toLocaleString('fr-FR') }) {
+  if (!points || points.length === 0) {
+    return <div className="flex items-center justify-center h-40 text-sm text-neutral-500">Aucune donnée</div>;
+  }
+
+  const width = 600;
+  const height = 180;
+  const padLeft = 55;
+  const padRight = 12;
+  const padTop = 16;
+  const padBottom = 28;
+  const plotWidth = width - padLeft - padRight;
+  const plotHeight = height - padTop - padBottom;
+
+  const values = points.map(p => p.value);
+  const rawMax = Math.max(...values, 0);
+  const rawMin = Math.min(...values, 0);
+  const range = rawMax - rawMin || 1;
+  const max = rawMax + range * 0.1;
+  const min = rawMin - range * 0.1;
+  const span = max - min || 1;
+
+  const xFor = (i) => padLeft + (points.length === 1 ? plotWidth / 2 : (i / (points.length - 1)) * plotWidth);
+  const yFor = (v) => padTop + plotHeight - ((v - min) / span) * plotHeight;
+  const zeroY = yFor(0);
+
+  const isPositive = values[values.length - 1] >= 0;
+  const color = isPositive ? '#10b981' : '#ef4444';
+
+  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xFor(i)} ${yFor(p.value)}`).join(' ');
+  const areaPath = `${linePath} L ${xFor(points.length - 1)} ${zeroY} L ${xFor(0)} ${zeroY} Z`;
+
+  // N'affiche pas plus de ~8 étiquettes sur l'axe X pour rester lisible
+  const labelStep = Math.max(1, Math.ceil(points.length / 8));
+
+  return (
+    <svg width="100%" viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+      <line x1={padLeft} y1={zeroY} x2={width - padRight} y2={zeroY} stroke="#404040" strokeWidth="1" strokeDasharray="4 3" />
+      <text x={padLeft - 8} y={zeroY + 3} textAnchor="end" fontSize="9" fill="#666">0</text>
+      <text x={padLeft - 8} y={padTop + 4} textAnchor="end" fontSize="9" fill="#666">{formatValue(max)}</text>
+      <text x={padLeft - 8} y={padTop + plotHeight} textAnchor="end" fontSize="9" fill="#666">{formatValue(min)}</text>
+
+      <path d={areaPath} fill={color} fillOpacity="0.12" />
+      <path d={linePath} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+
+      {points.map((p, i) => (
+        <circle key={i} cx={xFor(i)} cy={yFor(p.value)} r="3" fill={color}>
+          <title>{p.label} : {formatValue(p.value)}</title>
+        </circle>
+      ))}
+
+      {points.map((p, i) => (
+        i % labelStep === 0 && (
+          <text key={i} x={xFor(i)} y={height - 6} textAnchor="middle" fontSize="9" fill="#666">{p.label}</text>
+        )
+      ))}
+    </svg>
+  );
+}
+
 // Cercle de progression
 function CircularProgress({ value, max, size = 100, strokeWidth = 8, label, sublabel, color = '#10b981' }) {
   const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
@@ -790,6 +854,85 @@ function RendementWidget({ company }) {
   );
 }
 
+const MONTH_LABELS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+// Widget "courbe d'évolution" - résultat net CUMULÉ mois par mois (gains
+// réels moins charges, capital investi exclu - même logique que
+// RendementWidget mais dans le temps plutôt qu'en un seul chiffre final).
+// Répond à "est-ce que ça s'améliore ou ça empire", pas juste "où j'en suis".
+function EvolutionWidget({ company }) {
+  const [transactions, setTransactions] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    TransactionAPI.getAll(company.id)
+      .then(res => { if (!cancelled) setTransactions(res.data || []); })
+      .catch(err => { if (!cancelled) setError(err.response?.data?.detail || err.message); });
+    return () => { cancelled = true; };
+  }, [company.id]);
+
+  if (error) {
+    return (
+      <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50 mb-6 sm:mb-8 text-sm text-neutral-500">
+        <Icons.AlertTriangle size={14} className="inline mr-1.5 text-amber-400" />
+        Courbe d'évolution indisponible ({error}).
+      </div>
+    );
+  }
+  if (!transactions) {
+    return (
+      <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50 mb-6 sm:mb-8 flex items-center gap-3">
+        <Icons.Loader size={18} className="text-neutral-500" />
+        <span className="text-sm text-neutral-500">Chargement de la courbe d'évolution...</span>
+      </div>
+    );
+  }
+
+  const validated = transactions.filter(t => t.status === 'validated' && t.date);
+  const byMonth = {};
+  validated.forEach(t => {
+    const month = t.date.substring(0, 7); // YYYY-MM
+    if (!byMonth[month]) byMonth[month] = 0;
+    if (t.type === 'revenue' && t.category !== 'Apport Capital') byMonth[month] += (t.amount || 0);
+    if (t.type === 'expense') byMonth[month] -= (t.amount || 0);
+  });
+
+  const sortedMonths = Object.keys(byMonth).sort();
+  let running = 0;
+  const points = sortedMonths.map(month => {
+    running += byMonth[month];
+    const [y, m] = month.split('-').map(Number);
+    return { label: `${MONTH_LABELS_FR[m - 1]} ${String(y).slice(2)}`, value: running };
+  });
+
+  if (points.length === 0) {
+    return (
+      <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50 mb-6 sm:mb-8 text-sm text-neutral-500">
+        Pas encore assez de transactions validées pour tracer une courbe.
+      </div>
+    );
+  }
+
+  const last = points[points.length - 1].value;
+  const isPositive = last >= 0;
+
+  return (
+    <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 mb-6 sm:mb-8 overflow-hidden p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Évolution — Résultat net cumulé</h3>
+          <p className="text-[11px] text-neutral-600 mt-1">Gains réels moins charges, mois par mois (capital investi exclu)</p>
+        </div>
+        <span className={`text-sm font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+          {isPositive ? '+' : ''}{last.toLocaleString('fr-FR')} FCFA
+        </span>
+      </div>
+      <EvolutionChart points={points} formatValue={(v) => `${(v / 1000).toFixed(1)}k`} />
+    </div>
+  );
+}
+
 function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
   const [metrics, setMetrics] = useState({ totalRevenue: 0, totalExpenses: 0, netResult: 0, pendingExpenses: 0 });
   const [transactions, setTransactions] = useState([]);
@@ -860,6 +1003,7 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
 
       {company.id === 'abayili_invest_rc_trading' && <PionexGridBotWidget />}
       {company.id === 'abayili_invest_rpp_c1' && <RendementWidget company={company} />}
+      {(company.id === 'abayili_invest_rc_trading' || company.id === 'abayili_invest_rpp_c1') && <EvolutionWidget company={company} />}
 
       {/* Vue Total Annuel */}
       {isTotal ? (
