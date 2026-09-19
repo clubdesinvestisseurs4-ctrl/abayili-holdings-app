@@ -2608,14 +2608,7 @@ function PortfolioGlobalPage() {
             } catch { /* pas de relevé - reste sur le calcul par transactions */ }
           }
 
-          let reference = null;
-          try {
-            const refRes = await AnalyticsAPI.getReferenceCash(comp.id);
-            reference = refRes.data || null;
-          } catch { /* pas de référence renseignée pour cette entité */ }
-
-          const ecart = reference ? cash - reference.cash : null;
-          return { id: comp.id, name: comp.name, liquidity: comp.liquidity || 'cash', revenue, expense, cash, capitalNet, gainsCR, reference, ecart, txs };
+          return { id: comp.id, name: comp.name, liquidity: comp.liquidity || 'cash', revenue, expense, cash, capitalNet, gainsCR, txs };
         })
       );
       setEntityStats(results);
@@ -2630,7 +2623,6 @@ function PortfolioGlobalPage() {
   const placeEntities = entityStats.filter(e => e.liquidity === 'placé');
   const totalCash = cashEntities.reduce((s, e) => s + e.cash, 0);
   const totalPlace = placeEntities.reduce((s, e) => s + e.cash, 0);
-  const entitiesWithReference = entityStats.filter(e => e.reference);
   const donutData = entityStats.filter(e => e.cash > 0).map(e => ({ name: e.name, value: e.cash }));
 
   // --- Bilan Global / Rendement Global du fonds ---
@@ -2691,32 +2683,15 @@ function PortfolioGlobalPage() {
             <tr className="border-b border-neutral-800/50">
               <th className="text-left px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Entité</th>
               <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Calculé (app)</th>
-              <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Référence (Excel)</th>
-              <th className="text-right px-6 py-3 text-xs text-neutral-500 uppercase tracking-wider font-normal">Écart</th>
             </tr>
           </thead>
           <tbody>
-            {entities.map((e, i) => {
-              const hasRef = !!e.reference;
-              const isOk = hasRef && Math.abs(e.ecart) <= REFERENCE_TOLERANCE_FCFA;
-              return (
-                <tr key={e.id} className={`border-b border-neutral-800/30 last:border-0 ${i % 2 !== 0 ? 'bg-neutral-900/20' : ''}`}>
-                  <td className="px-6 py-4 text-sm text-white">{e.name}</td>
-                  <td className={`px-6 py-4 text-sm text-right ${e.cash >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{e.cash >= 0 ? '+' : ''}{e.cash.toLocaleString('fr-FR')} FCFA</td>
-                  <td className="px-6 py-4 text-sm text-right text-neutral-400">
-                    {hasRef ? `${e.reference.cash.toLocaleString('fr-FR')} FCFA` : <span className="text-neutral-600 italic">Non renseigné</span>}
-                    {hasRef && e.reference.asOf && <div className="text-[10px] text-neutral-600 mt-0.5">au {e.reference.asOf}</div>}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-right">
-                    {hasRef ? (
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${isOk ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                        {e.ecart >= 0 ? '+' : ''}{e.ecart.toLocaleString('fr-FR')} FCFA
-                      </span>
-                    ) : <span className="text-neutral-600">—</span>}
-                  </td>
-                </tr>
-              );
-            })}
+            {entities.map((e, i) => (
+              <tr key={e.id} className={`border-b border-neutral-800/30 last:border-0 ${i % 2 !== 0 ? 'bg-neutral-900/20' : ''}`}>
+                <td className="px-6 py-4 text-sm text-white">{e.name}</td>
+                <td className={`px-6 py-4 text-sm text-right ${e.cash >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{e.cash >= 0 ? '+' : ''}{e.cash.toLocaleString('fr-FR')} FCFA</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -2793,12 +2768,6 @@ function PortfolioGlobalPage() {
         {renderSection('Cash Disponible', 'PiggyBank', cashEntities, totalCash, 'text-emerald-400')}
         {renderSection('Capital Placé', 'TrendingUp', placeEntities, totalPlace, 'text-amber-400')}
       </div>
-
-      {entitiesWithReference.length > 0 && (
-        <div className="mt-4 text-[11px] text-neutral-500">
-          Écart ≤ {REFERENCE_TOLERANCE_FCFA} FCFA considéré comme concordant (arrondis). La référence est mise à jour manuellement depuis les fichiers Excel du Drive.
-        </div>
-      )}
     </div>
   );
 }
