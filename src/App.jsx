@@ -893,11 +893,14 @@ function CarryTradeWidget() {
           <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Carry Trade — Jambe Futures (Binance)</h3>
           <p className="text-[11px] text-neutral-600 mt-1">Short trimestriel qui couvre le BTC détenu au comptant - la convergence vers l'échéance est garantie, pas un pari directionnel</p>
         </div>
-        {carry.positions.length > 0 && (
-          <span className={`text-sm font-medium ${carry.positions.reduce((s, p) => s + p.unrealizedProfit, 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-            {carry.positions.reduce((s, p) => s + p.unrealizedProfit, 0) >= 0 ? '+' : ''}{carry.positions.reduce((s, p) => s + p.unrealizedProfit, 0).toFixed(2)} $
-          </span>
-        )}
+        {carry.positions.length > 0 && (() => {
+          const totalPnl = carry.positions.reduce((s, p) => s + (p.unrealizedProfit || 0), 0);
+          return (
+            <span className={`text-sm font-medium ${totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {totalPnl >= 0 ? '+' : ''}{totalPnl.toFixed(2)} $
+            </span>
+          );
+        })()}
       </div>
 
       {carry.positions.length === 0 ? (
@@ -916,11 +919,11 @@ function CarryTradeWidget() {
               </div>
               <div>
                 <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Entrée / Mark</p>
-                <p className="text-xs text-neutral-300">{p.entryPrice.toLocaleString('fr-FR')} / {p.markPrice.toLocaleString('fr-FR')} $</p>
+                <p className="text-xs text-neutral-300">{(p.entryPrice ?? 0).toLocaleString('fr-FR')} / {(p.markPrice ?? 0).toLocaleString('fr-FR')} $</p>
               </div>
               <div>
                 <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">PnL flottant</p>
-                <p className={`text-xs font-medium ${p.unrealizedProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{p.unrealizedProfit >= 0 ? '+' : ''}{p.unrealizedProfit.toFixed(2)} $</p>
+                <p className={`text-xs font-medium ${p.unrealizedProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{p.unrealizedProfit >= 0 ? '+' : ''}{(p.unrealizedProfit ?? 0).toFixed(2)} $</p>
               </div>
               <div>
                 <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Échéance</p>
@@ -932,7 +935,7 @@ function CarryTradeWidget() {
       )}
 
       <div className="px-6 pb-6 -mt-2">
-        <p className="text-[10px] text-neutral-600">Solde wallet Futures : {carry.futuresBalanceUsd.toFixed(2)} $ (disponible : {carry.futuresAvailableUsd.toFixed(2)} $)</p>
+        <p className="text-[10px] text-neutral-600">Solde wallet Futures : {(carry.futuresBalanceUsd ?? 0).toFixed(2)} $ (disponible : {(carry.futuresAvailableUsd ?? 0).toFixed(2)} $)</p>
       </div>
     </div>
   );
