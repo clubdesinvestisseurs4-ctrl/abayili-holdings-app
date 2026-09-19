@@ -2393,6 +2393,144 @@ const REFERENCE_TOLERANCE_FCFA = 100;
 // départements Réseau Cryptos/FCP/RTA/RPP - de la valeur immobilisée dans des
 // actifs/positions, pas du cash mobilisable). Les additionner sans distinction
 // donnerait une fausse impression de liquidité disponible.
+
+// Identifiant sentinelle (pas une vraie société) pour stocker l'historique
+// des relevés de trésorerie réelle globale - réutilise telle quelle
+// l'infrastructure des relevés manuels (routes/valuations.js, déjà générique
+// sur companyId) plutôt que de construire un nouveau mécanisme de stockage.
+const GLOBAL_CASH_REFERENCE_ID = 'GLOBAL_CASH_RECONCILIATION';
+
+// Réconciliation "à la Excel" - reproduit le contrôle que l'utilisateur
+// faisait manuellement : il liste tout son cash réel (comptes Wave, Djamo,
+// espèces...) dans un fichier "VUE GLOBALE PORTEFEUILLES" sur Drive, fait le
+// total, et le compare au total "Cash Disponible" de l'app (Abayili
+// Investissement + Consulting + AI for Afrika + Gourmandises) - le capital
+// placé (crypto, FCP, RTA, RPP) est volontairement exclu de cette
+// vérification, considéré immobilisé. Si les deux totaux concordent, "les
+// comptes sont bons". Distinct du "Bilan Global du Fonds" plus bas, qui lui
+// inclut le capital placé pour une vue de performance, pas de réconciliation.
+function CashReconciliationWidget({ totalCashApp }) {
+  const [snapshots, setSnapshots] = useState(null);
+  const [error, setError] = useState(null);
+  const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], value: '', note: '' });
+  const [submitting, setSubmitting] = useState(false);
+
+  const load = () => {
+    ValuationAPI.getAll(GLOBAL_CASH_REFERENCE_ID)
+      .then(res => setSnapshots(res.data || []))
+      .catch(err => setError(err.response?.data?.detail || err.message));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.value) return;
+    setSubmitting(true);
+    try {
+      await ValuationAPI.create({ companyId: GLOBAL_CASH_REFERENCE_ID, date: form.date, value: parseFloat(form.value), note: form.note });
+      setForm({ date: new Date().toISOString().split('T')[0], value: '', note: '' });
+      load();
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    await ValuationAPI.delete(id);
+    load();
+  };
+
+  if (error) {
+    return (
+      <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50 mb-8 text-sm text-neutral-500">
+        <Icons.AlertTriangle size={14} className="inline mr-1.5 text-amber-400" />
+        Réconciliation trésorerie indisponible ({error}).
+      </div>
+    );
+  }
+  if (!snapshots) {
+    return (
+      <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50 mb-8 flex items-center gap-3">
+        <Icons.Loader size={18} className="text-neutral-500" />
+        <span className="text-sm text-neutral-500">Chargement de la réconciliation...</span>
+      </div>
+    );
+  }
+
+  const sorted = [...snapshots].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const latest = sorted[sorted.length - 1];
+  const ecart = latest ? totalCashApp - latest.value : null;
+  const isOk = latest && Math.abs(ecart) <= REFERENCE_TOLERANCE_FCFA;
+
+  return (
+    <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 mb-8 overflow-hidden p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Réconciliation Trésorerie Réelle</h3>
+          <p className="text-[11px] text-neutral-600 mt-1">Cash Disponible de l'app comparé au total réel de tes comptes (Wave, Djamo, espèces...) - capital placé exclu, comme dans ta feuille Excel</p>
+        </div>
+        {latest && (
+          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${isOk ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+            {isOk ? 'Comptes bons' : 'Écart à vérifier'}
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-5">
+        <div>
+          <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Cash calculé (app)</p>
+          <p className="text-sm text-white">{totalCashApp.toLocaleString('fr-FR')} FCFA</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Cash réel (Excel)</p>
+          <p className="text-sm text-neutral-300">{latest ? `${latest.value.toLocaleString('fr-FR')} FCFA` : <span className="text-neutral-600 italic">Non renseigné</span>}</p>
+          {latest && <p className="text-[10px] text-neutral-600 mt-0.5">au {new Date(latest.date).toLocaleDateString('fr-FR')}</p>}
+        </div>
+        <div>
+          <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Écart</p>
+          <p className={`text-sm font-medium ${latest ? (isOk ? 'text-emerald-400' : 'text-red-400') : 'text-neutral-600'}`}>
+            {latest ? `${ecart >= 0 ? '+' : ''}${ecart.toLocaleString('fr-FR')} FCFA` : '—'}
+          </p>
+        </div>
+      </div>
+
+      {sorted.length > 0 && (
+        <div className="mb-5 space-y-1.5">
+          {[...sorted].reverse().slice(0, 5).map(s => (
+            <div key={s.id} className="flex items-center justify-between text-xs text-neutral-400 bg-neutral-800/30 rounded-lg px-3 py-2">
+              <span>{new Date(s.date).toLocaleDateString('fr-FR')} — {s.value.toLocaleString('fr-FR')} FCFA{s.note ? ` (${s.note})` : ''}</span>
+              <button onClick={() => handleDelete(s.id)} className="text-neutral-600 hover:text-red-400 transition-colors">
+                <Icons.Trash2 size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2">
+        <div>
+          <label className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 block">Date</label>
+          <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white focus:outline-none focus:border-neutral-600" required />
+        </div>
+        <div>
+          <label className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 block">Total cash réel (FCFA)</label>
+          <input type="number" step="1" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} placeholder="ex: 425117" className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-36 focus:outline-none focus:border-neutral-600" required />
+        </div>
+        <div className="flex-1 min-w-[120px]">
+          <label className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 block">Note (optionnel)</label>
+          <input type="text" value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="ex: total Excel VUE GLOBALE" className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-full focus:outline-none focus:border-neutral-600" />
+        </div>
+        <button type="submit" disabled={submitting} className="flex items-center gap-1.5 px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm hover:bg-neutral-200 transition-colors disabled:opacity-50">
+          <Icons.Plus size={14} />{submitting ? '...' : 'Ajouter'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function PortfolioGlobalPage() {
   const [loading, setLoading] = useState(true);
   const [entityStats, setEntityStats] = useState([]);
@@ -2575,6 +2713,8 @@ function PortfolioGlobalPage() {
         <h2 className="text-xl sm:text-2xl font-light tracking-tight">Portefeuille Global</h2>
         <p className="text-neutral-500 text-sm mt-1">Bilan consolidé du fonds Abayili Investissement — toutes sociétés et départements confondus</p>
       </div>
+
+      <CashReconciliationWidget totalCashApp={totalCash} />
 
       {/* Bilan Global / Rendement Global du fonds - vue "coup d'œil" qui
           répond à "est-ce que le fonds, dans son ensemble, performe ?",
