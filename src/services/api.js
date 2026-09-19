@@ -326,6 +326,10 @@ export const BinanceAPI = {
    * Solde spot Binance en direct (Réseau Cryptos - Actifs), converti en $/FCFA
    */
   getStatus: () => api.get('/binance/status'),
+  /**
+   * Position(s) futures ouvertes (jambe courte du cash-and-carry trimestriel)
+   */
+  getCarryStatus: () => api.get('/binance/carry-status'),
 };
 
 // ==================== WALLET (METAMASK) API ====================

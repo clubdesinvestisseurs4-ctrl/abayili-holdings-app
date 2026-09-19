@@ -851,6 +851,93 @@ function LiveWalletBalancesWidget() {
   );
 }
 
+// Suivi du cash-and-carry trimestriel BTC (spot + short futures) - stratégie
+// validée dans forex-algo-trading-lab (docs/research_log.md, 2026-09-14) :
+// convergence base->0 garantie à l'échéance, pas un pari directionnel.
+// Jambe spot déjà visible dans LiveWalletBalancesWidget ci-dessus (même
+// compte Binance) - ce widget montre la jambe futures (compte Binance
+// séparé) : position courte ouverte, PnL flottant, jours avant échéance.
+function CarryTradeWidget() {
+  const [carry, setCarry] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    BinanceAPI.getCarryStatus()
+      .then(res => { if (!cancelled) setCarry(res.data); })
+      .catch(err => { if (!cancelled) setError(err.response?.data?.detail || err.message); });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (error) {
+    return (
+      <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50 mb-6 sm:mb-8 text-sm text-neutral-500">
+        <Icons.AlertTriangle size={14} className="inline mr-1.5 text-amber-400" />
+        Position carry trade indisponible ({error}).
+      </div>
+    );
+  }
+  if (!carry) {
+    return (
+      <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800/50 mb-6 sm:mb-8 flex items-center gap-3">
+        <Icons.Loader size={18} className="text-neutral-500" />
+        <span className="text-sm text-neutral-500">Chargement de la position carry trade...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 mb-6 sm:mb-8 overflow-hidden">
+      <div className="flex items-center justify-between p-6 pb-4">
+        <div>
+          <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Carry Trade — Jambe Futures (Binance)</h3>
+          <p className="text-[11px] text-neutral-600 mt-1">Short trimestriel qui couvre le BTC détenu au comptant - la convergence vers l'échéance est garantie, pas un pari directionnel</p>
+        </div>
+        {carry.positions.length > 0 && (
+          <span className={`text-sm font-medium ${carry.positions.reduce((s, p) => s + p.unrealizedProfit, 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            {carry.positions.reduce((s, p) => s + p.unrealizedProfit, 0) >= 0 ? '+' : ''}{carry.positions.reduce((s, p) => s + p.unrealizedProfit, 0).toFixed(2)} $
+          </span>
+        )}
+      </div>
+
+      {carry.positions.length === 0 ? (
+        <p className="px-6 pb-6 text-sm text-neutral-500">Aucune position futures ouverte pour l'instant - une fois le short trimestriel ouvert sur Binance, il apparaîtra ici automatiquement.</p>
+      ) : (
+        <div className="px-6 pb-6 space-y-3">
+          {carry.positions.map(p => (
+            <div key={p.symbol} className="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-neutral-800/30 rounded-lg p-3">
+              <div>
+                <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Contrat</p>
+                <p className="text-xs text-white">{p.symbol}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Position</p>
+                <p className="text-xs text-neutral-300">{p.positionAmt > 0 ? 'Long' : 'Short'} {Math.abs(p.positionAmt)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Entrée / Mark</p>
+                <p className="text-xs text-neutral-300">{p.entryPrice.toLocaleString('fr-FR')} / {p.markPrice.toLocaleString('fr-FR')} $</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">PnL flottant</p>
+                <p className={`text-xs font-medium ${p.unrealizedProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{p.unrealizedProfit >= 0 ? '+' : ''}{p.unrealizedProfit.toFixed(2)} $</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Échéance</p>
+                <p className="text-xs text-neutral-300">{p.daysToExpiry !== null ? `${Math.round(p.daysToExpiry)} j` : '—'}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="px-6 pb-6 -mt-2">
+        <p className="text-[10px] text-neutral-600">Solde wallet Futures : {carry.futuresBalanceUsd.toFixed(2)} $ (disponible : {carry.futuresAvailableUsd.toFixed(2)} $)</p>
+      </div>
+    </div>
+  );
+}
+
 // Widget de rendement (ROI) - calculé à partir des transactions déjà
 // enregistrées, pas d'API externe (contrairement au bot Pionex). Répond à
 // "suis-je rentable ?" pour une entité "capital placé" : capital investi =
@@ -1296,6 +1383,7 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
 
       {company.id === 'abayili_invest_rc_trading' && <PionexGridBotWidget />}
       {company.id === 'abayili_invest_rc' && <LiveWalletBalancesWidget />}
+      {company.id === 'abayili_invest_rc' && <CarryTradeWidget />}
       {company.liquidity === 'placé' && <RendementWidget company={company} />}
       {/* Relevé manuel : uniquement pour les placements sans API ET sans
           transactions décomposables (le FCP - un fonds tiers, on ne peut
