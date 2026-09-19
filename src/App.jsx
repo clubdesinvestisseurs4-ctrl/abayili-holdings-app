@@ -2412,7 +2412,7 @@ const GLOBAL_CASH_REFERENCE_ID = 'GLOBAL_CASH_RECONCILIATION';
 function CashReconciliationWidget({ totalCashApp }) {
   const [snapshots, setSnapshots] = useState(null);
   const [error, setError] = useState(null);
-  const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], value: '', note: '' });
+  const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], totalExcel: '', reserves: '', note: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const load = () => {
@@ -2423,13 +2423,25 @@ function CashReconciliationWidget({ totalCashApp }) {
 
   useEffect(() => { load(); }, []);
 
+  // La feuille Excel liste TOUT le cash, y compris des réserves (coffres
+  // Wave Imprévus/Caution) que l'utilisateur ne considère pas mobilisable
+  // au quotidien - ce cash a d'ailleurs déjà été sorti d'Abayili
+  // Investissement et suivi dans un fichier "Gestion Personnelle" séparé,
+  // donc absent du calcul app par construction. On stocke directement le
+  // NET (Total - Réserves) comme valeur de référence comparable au cash
+  // app, tout en gardant le détail brut dans la note pour audit.
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.value) return;
+    if (!form.totalExcel) return;
     setSubmitting(true);
     try {
-      await ValuationAPI.create({ companyId: GLOBAL_CASH_REFERENCE_ID, date: form.date, value: parseFloat(form.value), note: form.note });
-      setForm({ date: new Date().toISOString().split('T')[0], value: '', note: '' });
+      const total = parseFloat(form.totalExcel);
+      const reserves = parseFloat(form.reserves) || 0;
+      const net = total - reserves;
+      const autoNote = `Total Excel ${total.toLocaleString('fr-FR')} F − Réserves ${reserves.toLocaleString('fr-FR')} F`;
+      const fullNote = form.note ? `${autoNote} (${form.note})` : autoNote;
+      await ValuationAPI.create({ companyId: GLOBAL_CASH_REFERENCE_ID, date: form.date, value: net, note: fullNote });
+      setForm({ date: new Date().toISOString().split('T')[0], totalExcel: '', reserves: '', note: '' });
       load();
     } catch (err) {
       setError(err.response?.data?.detail || err.message);
@@ -2516,17 +2528,22 @@ function CashReconciliationWidget({ totalCashApp }) {
           <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white focus:outline-none focus:border-neutral-600" required />
         </div>
         <div>
-          <label className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 block">Total cash réel (FCFA)</label>
-          <input type="number" step="1" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} placeholder="ex: 425117" className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-36 focus:outline-none focus:border-neutral-600" required />
+          <label className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 block">Total Excel (FCFA)</label>
+          <input type="number" step="1" value={form.totalExcel} onChange={e => setForm({ ...form, totalExcel: e.target.value })} placeholder="ex: 425117" className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-32 focus:outline-none focus:border-neutral-600" required />
+        </div>
+        <div>
+          <label className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 block">Réserves à exclure (FCFA)</label>
+          <input type="number" step="1" value={form.reserves} onChange={e => setForm({ ...form, reserves: e.target.value })} placeholder="ex: 223652" className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-32 focus:outline-none focus:border-neutral-600" />
         </div>
         <div className="flex-1 min-w-[120px]">
           <label className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 block">Note (optionnel)</label>
-          <input type="text" value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="ex: total Excel VUE GLOBALE" className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-full focus:outline-none focus:border-neutral-600" />
+          <input type="text" value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="ex: précision" className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-full focus:outline-none focus:border-neutral-600" />
         </div>
         <button type="submit" disabled={submitting} className="flex items-center gap-1.5 px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm hover:bg-neutral-200 transition-colors disabled:opacity-50">
           <Icons.Plus size={14} />{submitting ? '...' : 'Ajouter'}
         </button>
       </form>
+      <p className="text-[10px] text-neutral-600 mt-2">Réserves = Wave Coffre IMPREVUS + Wave Coffre CAUTION (sorties d'Abayili Investissement, suivies dans le fichier Gestion Personnelle séparé) - pas du cash mobilisable au quotidien, exclu automatiquement du calcul.</p>
     </div>
   );
 }
