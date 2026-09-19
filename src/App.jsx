@@ -1384,7 +1384,10 @@ function DashboardPage({ company, onNavigate, selectedMonth, onMonthChange }) {
         </div>
       </div>
 
-      {company.id === 'abayili_invest_rc_trading' && <PionexGridBotWidget />}
+      {/* Widget Pionex retiré le 2026-09-19 : bot entièrement retiré (capital
+          transféré vers RC Actifs sur Binance), plus de position à suivre.
+          Code du widget et route backend laissés en place au cas où un
+          nouveau bot serait relancé plus tard - juste plus rendu ici. */}
       {company.id === 'abayili_invest_rc' && <LiveWalletBalancesWidget />}
       {company.id === 'abayili_invest_rc' && <CarryTradeWidget />}
       {company.liquidity === 'placé' && <RendementWidget company={company} />}
