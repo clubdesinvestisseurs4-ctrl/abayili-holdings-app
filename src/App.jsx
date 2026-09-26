@@ -1171,11 +1171,16 @@ function EvolutionWidget({ company }) {
 // tel montant" de temps en temps ; le rendement est calculé automatiquement
 // à partir de ça et du capital net déjà apporté (transactions "Apport
 // Capital"), sans jamais toucher au grand livre des transactions.
+// Fonds connus pour le FCP - proposés dans le formulaire (texte libre quand
+// même autorisé, au cas où un troisième fonds s'ajoute plus tard).
+const KNOWN_FUND_LABELS = ['Fonds Diversifié', 'Fonds Obligataire / Sécurité', 'NSIA Opportunités'];
+const FUND_LABEL_FALLBACK = 'Général';
+
 function ValuationSnapshotWidget({ company }) {
   const [snapshots, setSnapshots] = useState(null);
   const [transactions, setTransactions] = useState(null);
   const [error, setError] = useState(null);
-  const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], value: '', note: '' });
+  const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], fundLabel: KNOWN_FUND_LABELS[0], value: '', note: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const load = () => {
@@ -1191,11 +1196,11 @@ function ValuationSnapshotWidget({ company }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.value) return;
+    if (!form.value || !form.fundLabel) return;
     setSubmitting(true);
     try {
-      await ValuationAPI.create({ companyId: company.id, date: form.date, value: parseFloat(form.value), note: form.note });
-      setForm({ date: new Date().toISOString().split('T')[0], value: '', note: '' });
+      await ValuationAPI.create({ companyId: company.id, date: form.date, value: parseFloat(form.value), note: form.note, fundLabel: form.fundLabel });
+      setForm({ date: new Date().toISOString().split('T')[0], fundLabel: form.fundLabel, value: '', note: '' });
       load();
     } catch (err) {
       setError(err.response?.data?.detail || err.message);
@@ -1236,48 +1241,83 @@ function ValuationSnapshotWidget({ company }) {
   const capitalNetActuel = capitalMoves.reduce((sum, m) => sum + m.amount, 0);
 
   const sortedSnapshots = [...snapshots].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-  const points = sortedSnapshots
-    .map(s => {
-      const capitalAtDate = capitalNetAt(s.date);
+
+  // Plusieurs fonds peuvent coexister (ex: Fonds Diversifié + Fonds
+  // Obligataire) - la "valeur actuelle" est la somme du DERNIER relevé de
+  // CHAQUE fonds, pas juste le dernier relevé toutes fonds confondus (qui
+  // ignorerait à tort un fonds pas mis à jour ce jour-là).
+  const byFund = {};
+  sortedSnapshots.forEach(s => {
+    const label = s.fundLabel || FUND_LABEL_FALLBACK;
+    if (!byFund[label]) byFund[label] = [];
+    byFund[label].push(s);
+  });
+  const latestByFund = Object.entries(byFund).map(([label, arr]) => ({ label, latest: arr[arr.length - 1] }));
+  const hasData = latestByFund.length > 0;
+  const totalLatestValue = latestByFund.reduce((sum, f) => sum + f.latest.value, 0);
+  const gainLatent = hasData ? totalLatestValue - capitalNetActuel : 0;
+  const rendementLatentPct = hasData && capitalNetActuel > 0 ? (gainLatent / capitalNetActuel) * 100 : 0;
+  const isPositive = gainLatent >= 0;
+
+  // Courbe d'évolution : reconstruction "au fil de l'eau" - à chaque date où
+  // au moins un relevé existe, la valeur totale = somme du dernier relevé
+  // connu de CHAQUE fonds à cette date (pas juste celui mis à jour ce
+  // jour-là), sinon la courbe chuterait artificiellement à chaque fois
+  // qu'un seul des deux fonds est mis à jour.
+  const allDates = [...new Set(sortedSnapshots.map(s => s.date))].sort();
+  const runningByFund = {};
+  const points = allDates
+    .map(date => {
+      sortedSnapshots.filter(s => s.date === date).forEach(s => { runningByFund[s.fundLabel || FUND_LABEL_FALLBACK] = s.value; });
+      const totalAtDate = Object.values(runningByFund).reduce((a, b) => a + b, 0);
+      const capitalAtDate = capitalNetAt(date);
       return capitalAtDate > 0
-        ? { label: new Date(s.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }), value: ((s.value - capitalAtDate) / capitalAtDate) * 100 }
+        ? { label: new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }), value: ((totalAtDate - capitalAtDate) / capitalAtDate) * 100 }
         : null;
     })
     .filter(Boolean);
-
-  const latest = sortedSnapshots[sortedSnapshots.length - 1];
-  const gainLatent = latest ? latest.value - capitalNetActuel : 0;
-  const rendementLatentPct = latest && capitalNetActuel > 0 ? (gainLatent / capitalNetActuel) * 100 : 0;
-  const isPositive = gainLatent >= 0;
 
   return (
     <div className="bg-neutral-900/50 rounded-2xl border border-neutral-800/50 mb-6 sm:mb-8 overflow-hidden p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm text-neutral-400 uppercase tracking-wider">Relevés manuels de valeur</h3>
-          <p className="text-[11px] text-neutral-600 mt-1">Pas d'API pour ce placement - tu entres la valeur toi-même, le rendement se calcule automatiquement</p>
+          <p className="text-[11px] text-neutral-600 mt-1">Pas d'API pour ces placements - tu entres la valeur de chaque fonds toi-même, le rendement se calcule automatiquement</p>
         </div>
       </div>
 
-      {latest && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
-          <div>
-            <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Valeur actuelle connue</p>
-            <p className="text-sm text-white">{latest.value.toLocaleString('fr-FR')} FCFA</p>
+      {hasData && (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+            <div>
+              <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Valeur totale connue</p>
+              <p className="text-sm text-white">{totalLatestValue.toLocaleString('fr-FR')} FCFA</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Capital net apporté</p>
+              <p className="text-sm text-neutral-300">{capitalNetActuel.toLocaleString('fr-FR')} FCFA</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Gain latent</p>
+              <p className={`text-sm ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>{isPositive ? '+' : ''}{gainLatent.toLocaleString('fr-FR')} FCFA</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Rendement latent</p>
+              <p className={`text-sm font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>{isPositive ? '+' : ''}{rendementLatentPct.toFixed(1)}%</p>
+            </div>
           </div>
-          <div>
-            <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Capital net apporté</p>
-            <p className="text-sm text-neutral-300">{capitalNetActuel.toLocaleString('fr-FR')} FCFA</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Gain latent</p>
-            <p className={`text-sm ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>{isPositive ? '+' : ''}{gainLatent.toLocaleString('fr-FR')} FCFA</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Rendement latent</p>
-            <p className={`text-sm font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>{isPositive ? '+' : ''}{rendementLatentPct.toFixed(1)}%</p>
-          </div>
-        </div>
+
+          {latestByFund.length > 1 && (
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              {latestByFund.map(f => (
+                <div key={f.label} className="bg-neutral-800/30 rounded-lg px-3 py-2">
+                  <p className="text-[10px] text-neutral-500 uppercase tracking-wider">{f.label}</p>
+                  <p className="text-sm text-white">{f.latest.value.toLocaleString('fr-FR')} FCFA <span className="text-[10px] text-neutral-600">au {new Date(f.latest.date).toLocaleDateString('fr-FR')}</span></p>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {points.length > 1 && <div className="mb-5"><EvolutionChart points={points} formatValue={(v) => `${v.toFixed(0)}%`} /></div>}
@@ -1286,7 +1326,7 @@ function ValuationSnapshotWidget({ company }) {
         <div className="mb-5 space-y-1.5">
           {[...sortedSnapshots].reverse().map(s => (
             <div key={s.id} className="flex items-center justify-between text-xs text-neutral-400 bg-neutral-800/30 rounded-lg px-3 py-2">
-              <span>{new Date(s.date).toLocaleDateString('fr-FR')} — {s.value.toLocaleString('fr-FR')} FCFA{s.note ? ` (${s.note})` : ''}</span>
+              <span>{new Date(s.date).toLocaleDateString('fr-FR')} — <span className="text-neutral-300">{s.fundLabel || FUND_LABEL_FALLBACK}</span> : {s.value.toLocaleString('fr-FR')} FCFA{s.note ? ` (${s.note})` : ''}</span>
               <button onClick={() => handleDelete(s.id)} className="text-neutral-600 hover:text-red-400 transition-colors">
                 <Icons.Trash2 size={13} />
               </button>
@@ -1301,12 +1341,19 @@ function ValuationSnapshotWidget({ company }) {
           <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white focus:outline-none focus:border-neutral-600" required />
         </div>
         <div>
-          <label className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 block">Valeur totale (FCFA)</label>
-          <input type="number" step="0.01" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} placeholder="ex: 1384" className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-32 focus:outline-none focus:border-neutral-600" required />
+          <label className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 block">Fonds</label>
+          <input list="fund-labels" type="text" value={form.fundLabel} onChange={e => setForm({ ...form, fundLabel: e.target.value })} className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-44 focus:outline-none focus:border-neutral-600" required />
+          <datalist id="fund-labels">
+            {KNOWN_FUND_LABELS.map(l => <option key={l} value={l} />)}
+          </datalist>
+        </div>
+        <div>
+          <label className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 block">Valeur du fonds (FCFA)</label>
+          <input type="number" step="0.01" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} placeholder="ex: 650" className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-32 focus:outline-none focus:border-neutral-600" required />
         </div>
         <div className="flex-1 min-w-[120px]">
           <label className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 block">Note (optionnel)</label>
-          <input type="text" value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="ex: relevé app Jamo" className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-full focus:outline-none focus:border-neutral-600" />
+          <input type="text" value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="ex: relevé app NCA" className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-full focus:outline-none focus:border-neutral-600" />
         </div>
         <button type="submit" disabled={submitting} className="flex items-center gap-1.5 px-4 py-2 bg-white text-neutral-900 rounded-lg text-sm hover:bg-neutral-200 transition-colors disabled:opacity-50">
           <Icons.Plus size={14} />{submitting ? '...' : 'Ajouter'}
