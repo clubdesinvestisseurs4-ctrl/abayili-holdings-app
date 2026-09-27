@@ -1173,7 +1173,7 @@ function EvolutionWidget({ company }) {
 // Capital"), sans jamais toucher au grand livre des transactions.
 // Fonds connus pour le FCP - proposés dans le formulaire (texte libre quand
 // même autorisé, au cas où un troisième fonds s'ajoute plus tard).
-const KNOWN_FUND_LABELS = ['Fonds Diversifié', 'Fonds Obligataire / Sécurité', 'NSIA Opportunités'];
+const KNOWN_FUND_LABELS = ['AURORE SECURITE', 'AURORE OPPORTUNITES', 'NSIA Opportunités'];
 const FUND_LABEL_FALLBACK = 'Général';
 
 function ValuationSnapshotWidget({ company }) {
