@@ -2643,14 +2643,25 @@ function PortfolioGlobalPage() {
           // profitable pour l'instant) - son relevé manuel de valeur est la
           // seule source fiable de sa performance réelle, donc on l'utilise
           // à la place du calcul par transactions pour ce cas précis.
+          // Plusieurs fonds peuvent coexister (NSIA Opportunités, AURORE
+          // SECURITE, AURORE OPPORTUNITES...) - la valeur totale est la
+          // somme du DERNIER relevé de CHAQUE fonds, pas juste le dernier
+          // relevé toutes entrées confondues (qui, à date egale entre deux
+          // fonds, n'en garderait qu'un seul au hasard - constaté en
+          // production le 2026-09-27, rendement FCP faussé à -60%).
           if (comp.id === 'abayili_invest_fcp') {
             try {
               const snapRes = await ValuationAPI.getAll(comp.id);
-              const snaps = (snapRes.data || []).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+              const snaps = snapRes.data || [];
               if (snaps.length > 0) {
-                const latestValue = snaps[snaps.length - 1].value;
-                gainsCR = latestValue - capitalNet;
-                cash = latestValue;
+                const latestPerFund = {};
+                snaps.forEach(s => {
+                  const label = s.fundLabel || 'Général';
+                  if (!latestPerFund[label] || s.date > latestPerFund[label].date) latestPerFund[label] = s;
+                });
+                const totalValue = Object.values(latestPerFund).reduce((sum, s) => sum + s.value, 0);
+                gainsCR = totalValue - capitalNet;
+                cash = totalValue;
               }
             } catch { /* pas de relevé - reste sur le calcul par transactions */ }
           }
