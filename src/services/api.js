@@ -61,7 +61,15 @@ const RETRY_DELAY_MS = 1500;
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Toute écriture réussie invalide le cache de lecture (voir plus bas) -
+    // simple et sûr : jamais plus de quelques dizaines de secondes de
+    // décalage entre une modification et son reflet ailleurs dans l'app.
+    if (response.config?.method && response.config.method !== 'get') {
+      readCache.clear();
+    }
+    return response;
+  },
   async (error) => {
     const config = error.config;
     const status = error.response?.status;
@@ -83,6 +91,28 @@ api.interceptors.response.use(
   }
 );
 
+// Cache mémoire léger côté frontend - la navigation entre pages (changer de
+// société, revenir sur un onglet déjà visité) remonte/démonte les
+// composants à chaque fois, donc chaque visite relançait un aller-retour
+// réseau complet même pour une donnée déjà vue quelques secondes plus tôt.
+// Fenêtre courte (45s, cohérente avec le cache côté serveur déjà en place
+// sur /transactions) : assez pour rendre les transitions fluides, assez
+// court pour qu'une donnée ne reste jamais visiblement périmée. Vidé
+// entièrement à chaque écriture réussie (voir l'intercepteur ci-dessus).
+const readCache = new Map(); // url -> { response, expiresAt }
+const READ_CACHE_TTL_MS = 45_000;
+
+function cachedGet(url) {
+  const cached = readCache.get(url);
+  if (cached && Date.now() < cached.expiresAt) {
+    return Promise.resolve(cached.response);
+  }
+  return api.get(url).then(response => {
+    readCache.set(url, { response, expiresAt: Date.now() + READ_CACHE_TTL_MS });
+    return response;
+  });
+}
+
 // ==================== TRANSACTIONS API ====================
 export const TransactionAPI = {
   /**
@@ -102,14 +132,14 @@ export const TransactionAPI = {
     if (filters.endDate) params.append('endDate', filters.endDate);
     
     const queryString = params.toString();
-    return api.get(`/transactions/${companyId}${queryString ? `?${queryString}` : ''}`);
+    return cachedGet(`/transactions/${companyId}${queryString ? `?${queryString}` : ''}`);
   },
   
   /**
    * Récupérer tous les mois avec transactions
    * @param {string} companyId - ID de l'entreprise
    */
-  getAllMonths: (companyId) => api.get(`/transactions/${companyId}/all-months`),
+  getAllMonths: (companyId) => cachedGet(`/transactions/${companyId}/all-months`),
   
   /**
    * Créer une nouvelle transaction
@@ -147,14 +177,14 @@ export const BudgetAPI = {
    */
   getAll: (companyId, month = null) => {
     const params = month ? `?month=${month}` : '';
-    return api.get(`/budgets/${companyId}${params}`);
+    return cachedGet(`/budgets/${companyId}${params}`);
   },
   
   /**
    * Récupérer tous les mois avec budgets
    * @param {string} companyId - ID de l'entreprise
    */
-  getAllMonths: (companyId) => api.get(`/budgets/${companyId}/all-months`),
+  getAllMonths: (companyId) => cachedGet(`/budgets/${companyId}/all-months`),
   
   /**
    * Vérifier les alertes de budget
@@ -163,7 +193,7 @@ export const BudgetAPI = {
    */
   checkAlert: (companyId, params) => {
     const queryParams = new URLSearchParams(params).toString();
-    return api.get(`/budgets/${companyId}/check?${queryParams}`);
+    return cachedGet(`/budgets/${companyId}/check?${queryParams}`);
   },
   
   /**
@@ -201,14 +231,14 @@ export const ObjectiveAPI = {
    * Récupérer tous les objectifs d'une entreprise
    * @param {string} companyId - ID de l'entreprise
    */
-  getAll: (companyId) => api.get(`/objectives/${companyId}`),
+  getAll: (companyId) => cachedGet(`/objectives/${companyId}`),
   
   /**
    * Récupérer un objectif par ID
    * @param {string} companyId - ID de l'entreprise
    * @param {string} id - ID de l'objectif
    */
-  getOne: (companyId, id) => api.get(`/objectives/${companyId}/${id}`),
+  getOne: (companyId, id) => cachedGet(`/objectives/${companyId}/${id}`),
   
   /**
    * Créer un nouvel objectif
@@ -284,7 +314,7 @@ export const AnalyticsAPI = {
     const params = new URLSearchParams();
     if (month) params.append('month', month);
     params.append('period', period);
-    return api.get(`/analytics/${companyId}/metrics?${params.toString()}`);
+    return cachedGet(`/analytics/${companyId}/metrics?${params.toString()}`);
   },
   
   /**
@@ -293,7 +323,7 @@ export const AnalyticsAPI = {
    * @param {number} year - Année
    */
   getChartData: (companyId, year = new Date().getFullYear()) => 
-    api.get(`/analytics/${companyId}/chart?year=${year}`),
+    cachedGet(`/analytics/${companyId}/chart?year=${year}`),
   
   /**
    * Récupérer le résumé mensuel
@@ -301,14 +331,14 @@ export const AnalyticsAPI = {
    * @param {number} year - Année
    */
   getMonthlySummary: (companyId, year = new Date().getFullYear()) =>
-    api.get(`/analytics/${companyId}/monthly-summary?year=${year}`),
+    cachedGet(`/analytics/${companyId}/monthly-summary?year=${year}`),
 
   /**
    * Récupérer le chiffre de trésorerie de référence (source externe, Excel/Drive)
    * pour réconciliation avec les transactions de l'app. Retourne null si non renseigné.
    * @param {string} companyId - ID de l'entreprise
    */
-  getReferenceCash: (companyId) => api.get(`/analytics/${companyId}/reference`),
+  getReferenceCash: (companyId) => cachedGet(`/analytics/${companyId}/reference`),
 };
 
 // ==================== PIONEX API ====================
@@ -317,7 +347,7 @@ export const PionexAPI = {
    * Etat live du bot de trading en grille (Réseau Cryptos - Trading) :
    * PnL recalculé dynamiquement à partir du prix BTC actuel.
    */
-  getGridBotStatus: () => api.get('/pionex/grid-bot/status'),
+  getGridBotStatus: () => cachedGet('/pionex/grid-bot/status'),
 };
 
 // ==================== BINANCE API ====================
@@ -325,11 +355,11 @@ export const BinanceAPI = {
   /**
    * Solde spot Binance en direct (Réseau Cryptos - Actifs), converti en $/FCFA
    */
-  getStatus: () => api.get('/binance/status'),
+  getStatus: () => cachedGet('/binance/status'),
   /**
    * Position(s) futures ouvertes (jambe courte du cash-and-carry trimestriel)
    */
-  getCarryStatus: () => api.get('/binance/carry-status'),
+  getCarryStatus: () => cachedGet('/binance/carry-status'),
 };
 
 // ==================== WALLET (METAMASK) API ====================
@@ -337,7 +367,7 @@ export const WalletAPI = {
   /**
    * Solde ETH natif du wallet MetaMask en direct (Réseau Cryptos - Actifs)
    */
-  getStatus: () => api.get('/wallet/status'),
+  getStatus: () => cachedGet('/wallet/status'),
 };
 
 // ==================== VALUATIONS API ====================
@@ -345,7 +375,7 @@ export const ValuationAPI = {
   /**
    * Relevés de valeur manuels (placements sans API, ex: FCP via Jamo/NSIA)
    */
-  getAll: (companyId) => api.get(`/valuations/${companyId}`),
+  getAll: (companyId) => cachedGet(`/valuations/${companyId}`),
   create: (data) => api.post('/valuations', data),
   delete: (id) => api.delete(`/valuations/${id}`),
 };
@@ -355,13 +385,13 @@ export const UserAPI = {
   /**
    * Récupérer tous les utilisateurs
    */
-  getAll: () => api.get('/users'),
+  getAll: () => cachedGet('/users'),
   
   /**
    * Récupérer un utilisateur par UID
    * @param {string} uid - UID de l'utilisateur
    */
-  getOne: (uid) => api.get(`/users/${uid}`),
+  getOne: (uid) => cachedGet(`/users/${uid}`),
   
   /**
    * Créer un nouvel utilisateur
