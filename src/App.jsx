@@ -46,7 +46,7 @@ const Icons = {
 // ==================== COMPANIES CONFIG ====================
 const COMPANIES = {
   abayili_invest: { id: 'abayili_invest', name: 'Abayili Investissement', shortName: 'AI', description: 'Société de Capital-Risque', icon: 'Building2', liquidity: 'cash',
-    departments: ['abayili_invest_rc', 'abayili_invest_rc_trading', 'abayili_invest_fcp', 'abayili_invest_rta', 'abayili_invest_rpp_c1', 'forgesafe_digital'],
+    departments: ['abayili_invest_rc', 'abayili_invest_rc_trading', 'abayili_invest_fcp', 'abayili_invest_rta', 'abayili_invest_rpp_c1'],
     revenueCategories: [{ id: 'commissions', name: 'Commissions', icon: '💰' }, { id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
     expenseCategories: [{ id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '🏢' }, { id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏢' }, { id: 'charges_fixes_donations', name: 'Charges Fixes Donations', icon: '🏢' }, { id: 'charges_fixes_frais_opérationnels', name: 'Charges Fixes Frais Opérationnels', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
   },
@@ -73,15 +73,19 @@ const COMPANIES = {
     revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
     expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'apport_capital_retrait', name: 'Apport Capital', icon: '🏦' }]
   },
-  // Coentreprise à 50% (pas 100%) - l'utilisateur gère le volet finance pour
-  // les deux associés, réplique du fichier Excel partagé "GESTION FINANCES
-  // FORGESAFE AND DIGITAL SOLUTIONS" (Drive). Le tableau de bord propre à
-  // cette entité montre son activité réelle à 100% (utile pour la gestion
-  // au quotidien et pour rester fidèle à l'Excel partagé) - c'est au niveau
-  // de Portefeuille Global que ownershipPct est appliqué pour ne pooler que
-  // la part réellement détenue par Abayili Investissement dans les totaux
+  // Participation Private Equity d'Abayili Investissement (50%, pas une
+  // acquisition totale) - une société à part entière, pas un département
+  // interne comme RC/FCP/RTA/RPP (qui sont du capital déployé directement
+  // par Abayili Investissement, détenu à 100%). Affichée à plat dans la
+  // sidebar comme les autres sociétés (pas de parentId), réplique du
+  // fichier Excel partagé "GESTION FINANCES FORGESAFE AND DIGITAL
+  // SOLUTIONS" (Drive) - l'utilisateur gère le volet finance pour les deux
+  // associés. Le tableau de bord propre à cette entité montre son activité
+  // réelle à 100% (fidèle à l'Excel partagé) - c'est au niveau de
+  // Portefeuille Global que ownershipPct est appliqué pour ne pooler que la
+  // part réellement détenue par Abayili Investissement dans les totaux
   // consolidés (pour ne pas gonfler le Bilan Global avec la part de l'associé).
-  forgesafe_digital: { id: 'forgesafe_digital', parentId: 'abayili_invest', name: 'ForgeSafe and Digital Solutions', shortName: 'FORGESAFE', description: 'Abayili Investissement — Solutions digitales (coentreprise 50%)', icon: 'Shield', liquidity: 'cash', ownershipPct: 0.5,
+  forgesafe_digital: { id: 'forgesafe_digital', name: 'ForgeSafe and Digital Solutions', shortName: 'FORGESAFE', description: 'Participation Private Equity d\'Abayili Investissement (50%) — Solutions digitales', icon: 'Shield', liquidity: 'cash', ownershipPct: 0.5,
     revenueCategories: [{ id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }, { id: 'contrat_licence', name: 'Contrat / license', icon: '📜' }],
     expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
   },
