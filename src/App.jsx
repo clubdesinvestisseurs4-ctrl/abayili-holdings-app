@@ -40,12 +40,13 @@ const Icons = {
   ChefHat: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>,
   Layers: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>,
   Menu: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>,
+  Shield: ({ size = 24, className = '' }) => <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>,
 };
 
 // ==================== COMPANIES CONFIG ====================
 const COMPANIES = {
   abayili_invest: { id: 'abayili_invest', name: 'Abayili Investissement', shortName: 'AI', description: 'Société de Capital-Risque', icon: 'Building2', liquidity: 'cash',
-    departments: ['abayili_invest_rc', 'abayili_invest_rc_trading', 'abayili_invest_fcp', 'abayili_invest_rta', 'abayili_invest_rpp_c1'],
+    departments: ['abayili_invest_rc', 'abayili_invest_rc_trading', 'abayili_invest_fcp', 'abayili_invest_rta', 'abayili_invest_rpp_c1', 'forgesafe_digital'],
     revenueCategories: [{ id: 'commissions', name: 'Commissions', icon: '💰' }, { id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
     expenseCategories: [{ id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_financières_RESERVES', name: 'Charges Financières RESERVES', icon: '🏢' }, { id: 'charges_financières_Apport_capital', name: 'Charges Financières Apport Capital', icon: '🏢' }, { id: 'charges_fixes_donations', name: 'Charges Fixes Donations', icon: '🏢' }, { id: 'charges_fixes_frais_opérationnels', name: 'Charges Fixes Frais Opérationnels', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
   },
@@ -71,6 +72,18 @@ const COMPANIES = {
   abayili_invest_rpp_c1: { id: 'abayili_invest_rpp_c1', parentId: 'abayili_invest', name: 'Réseau Parieurs Pro — Compte 1', shortName: 'RPP C1', description: 'Abayili Investissement — Département Capital Risque', icon: 'Target', liquidity: 'placé',
     revenueCategories: [{ id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }, { id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }],
     expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'apport_capital_retrait', name: 'Apport Capital', icon: '🏦' }]
+  },
+  // Coentreprise à 50% (pas 100%) - l'utilisateur gère le volet finance pour
+  // les deux associés, réplique du fichier Excel partagé "GESTION FINANCES
+  // FORGESAFE AND DIGITAL SOLUTIONS" (Drive). Le tableau de bord propre à
+  // cette entité montre son activité réelle à 100% (utile pour la gestion
+  // au quotidien et pour rester fidèle à l'Excel partagé) - c'est au niveau
+  // de Portefeuille Global que ownershipPct est appliqué pour ne pooler que
+  // la part réellement détenue par Abayili Investissement dans les totaux
+  // consolidés (pour ne pas gonfler le Bilan Global avec la part de l'associé).
+  forgesafe_digital: { id: 'forgesafe_digital', parentId: 'abayili_invest', name: 'ForgeSafe and Digital Solutions', shortName: 'FORGESAFE', description: 'Abayili Investissement — Solutions digitales (coentreprise 50%)', icon: 'Shield', liquidity: 'cash', ownershipPct: 0.5,
+    revenueCategories: [{ id: 'apport_capital', name: 'Apport Capital', icon: '🏦' }, { id: 'contrat_licence', name: 'Contrat / license', icon: '📜' }],
+    expenseCategories: [{ id: 'charges_financières', name: 'Charges Financières', icon: '🏢' }, { id: 'charges_variables', name: 'Charges Variables', icon: '📊' }, { id: 'charges_fixes', name: 'Charges Fixes', icon: '🏢' }, { id: 'charges_exceptionnelles', name: 'Charges Exceptionnelles', icon: '⚡' }]
   },
   abayili_consulting: { id: 'abayili_consulting', name: 'Abayili Consulting', shortName: 'AC', description: 'Consulting, Formation & Conférences', icon: 'GraduationCap', liquidity: 'cash',
     revenueCategories: [{ id: 'formations', name: 'Ventes de Formations', icon: '📚' }, { id: 'consulting', name: 'Missions Consulting', icon: '💼' }, { id: 'conferences', name: 'Conférences', icon: '🎤' }, { id: 'produits_financiers', name: 'Produits Financiers', icon: '📈' }],
@@ -2666,7 +2679,17 @@ function PortfolioGlobalPage() {
             } catch { /* pas de relevé - reste sur le calcul par transactions */ }
           }
 
-          return { id: comp.id, name: comp.name, liquidity: comp.liquidity || 'cash', revenue, expense, cash, capitalNet, gainsCR, txs };
+          // Coentreprise détenue à moins de 100% (ex: ForgeSafe, 50%) : le
+          // tableau de bord de l'entité elle-même montre son activité réelle
+          // à 100% (fidèle à la comptabilité partagée avec l'associé), mais
+          // les totaux consolidés de Portefeuille Global ne doivent compter
+          // que la part réellement détenue par Abayili Investissement -
+          // sinon le Bilan Global inclurait à tort la part de l'associé.
+          const ownershipPct = comp.ownershipPct ?? 1;
+          const rawCash = cash;
+          cash = cash * ownershipPct;
+
+          return { id: comp.id, name: comp.name, liquidity: comp.liquidity || 'cash', revenue, expense, cash, rawCash, ownershipPct, capitalNet, gainsCR, txs };
         })
       );
       setEntityStats(results);
@@ -2702,12 +2725,13 @@ function PortfolioGlobalPage() {
   // seul point dans le temps, pas d'historique) - noté sous la courbe.
   const byMonthGlobal = {};
   entityStats.forEach(e => {
+    const pct = e.ownershipPct ?? 1;
     (e.txs || []).forEach(t => {
       const month = t.date.substring(0, 7);
       if (!byMonthGlobal[month]) byMonthGlobal[month] = 0;
       if (e.liquidity === 'placé' && (t.category === 'Apport Capital' || t.category === 'Charges Financières RESERVES')) return; // mouvement de capital ou achat d'actif, pas une performance
-      if (t.type === 'revenue') byMonthGlobal[month] += (t.amount || 0);
-      else if (t.type === 'expense') byMonthGlobal[month] -= (t.amount || 0);
+      if (t.type === 'revenue') byMonthGlobal[month] += (t.amount || 0) * pct;
+      else if (t.type === 'expense') byMonthGlobal[month] -= (t.amount || 0) * pct;
     });
   });
   const sortedGlobalMonths = Object.keys(byMonthGlobal).sort();
@@ -2746,7 +2770,14 @@ function PortfolioGlobalPage() {
           <tbody>
             {entities.map((e, i) => (
               <tr key={e.id} className={`border-b border-neutral-800/30 last:border-0 ${i % 2 !== 0 ? 'bg-neutral-900/20' : ''}`}>
-                <td className="px-6 py-4 text-sm text-white">{e.name}</td>
+                <td className="px-6 py-4 text-sm text-white">
+                  {e.name}
+                  {e.ownershipPct < 1 && (
+                    <span className="block text-[10px] text-neutral-500 mt-0.5">
+                      {(e.ownershipPct * 100).toFixed(0)}% détenu — {e.rawCash.toLocaleString('fr-FR')} FCFA à 100%
+                    </span>
+                  )}
+                </td>
                 <td className={`px-6 py-4 text-sm text-right ${e.cash >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{e.cash >= 0 ? '+' : ''}{e.cash.toLocaleString('fr-FR')} FCFA</td>
               </tr>
             ))}
