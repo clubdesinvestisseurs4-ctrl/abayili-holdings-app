@@ -1359,10 +1359,17 @@ function ValuationSnapshotWidget({ company }) {
         </div>
         <div>
           <label className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 block">Fonds</label>
-          <input list="fund-labels" type="text" value={form.fundLabel} onChange={e => setForm({ ...form, fundLabel: e.target.value })} className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-44 focus:outline-none focus:border-neutral-600" required />
-          <datalist id="fund-labels">
-            {KNOWN_FUND_LABELS.map(l => <option key={l} value={l} />)}
-          </datalist>
+          <select
+            value={KNOWN_FUND_LABELS.includes(form.fundLabel) ? form.fundLabel : '__autre__'}
+            onChange={e => setForm({ ...form, fundLabel: e.target.value === '__autre__' ? '' : e.target.value })}
+            className="px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-44 focus:outline-none focus:border-neutral-600"
+          >
+            {KNOWN_FUND_LABELS.map(l => <option key={l} value={l}>{l}</option>)}
+            <option value="__autre__">Autre...</option>
+          </select>
+          {!KNOWN_FUND_LABELS.includes(form.fundLabel) && (
+            <input type="text" value={form.fundLabel} onChange={e => setForm({ ...form, fundLabel: e.target.value })} placeholder="Nom du fonds" className="mt-1.5 px-3 py-2 bg-neutral-800/50 border border-neutral-700/50 rounded-lg text-sm text-white w-44 focus:outline-none focus:border-neutral-600" required />
+          )}
         </div>
         <div>
           <label className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 block">Valeur du fonds (FCFA)</label>
