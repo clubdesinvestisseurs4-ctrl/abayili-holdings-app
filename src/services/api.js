@@ -55,9 +55,14 @@ api.interceptors.request.use(async (config) => {
 // épuisé (RESOURCE_EXHAUSTED), auquel cas réessayer ne fait qu'aggraver
 // l'épuisement du quota sans jamais réussir. Seules les pannes réseau/
 // serveur réellement transitoires (timeout, 502/503/504) sont réessayées.
+// MAX_RETRIES/RETRY_DELAY_MS : budget total ~56s (délais 2,4,6,8,10,12,14s) pour
+// couvrir le réveil à froid du backend Render gratuit (30-50s, voir commentaire du
+// timeout ci-dessus) - avec l'ancien budget de 4,5s (2 tentatives), une requête qui
+// tombait pile pendant ce réveil abandonnait bien avant que le serveur ne réponde
+// (ex: bandeau "Profil non chargé (ERR_NETWORK)" au démarrage de l'app).
 const RETRYABLE_STATUSES = [502, 503, 504];
-const MAX_RETRIES = 2;
-const RETRY_DELAY_MS = 1500;
+const MAX_RETRIES = 7;
+const RETRY_DELAY_MS = 2000;
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 api.interceptors.response.use(
