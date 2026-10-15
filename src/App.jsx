@@ -2715,7 +2715,24 @@ function PortfolioGlobalPage() {
           const rawCash = cash;
           cash = cash * ownershipPct;
 
-          return { id: comp.id, name: comp.name, liquidity: comp.liquidity || 'cash', revenue, expense, cash, rawCash, ownershipPct, capitalNet, gainsCR, txs };
+          // RC Actifs (2026-10-15) : une partie de sa valeur dort en stablecoins sur
+          // Binance (liquidité réelle, pas un pari sur un cours) - le ratio live
+          // cash/total de /api/binance/status détermine quelle fraction de la valeur
+          // DÉJÀ calculée par le grand livre (ci-dessus, donc cohérente avec le Bilan
+          // Global) compte comme "Cash dispo" plutôt que "Capital Placé" ci-dessous.
+          // Binance ne devient jamais la source du MONTANT total de RC, seulement de
+          // cette proportion - sinon un écart entre grand livre et solde live (frais
+          // non enregistrés, virement en cours...) romprait la réconciliation du bilan.
+          let binanceCashRatio = null;
+          if (comp.id === 'abayili_invest_rc') {
+            try {
+              const binRes = await BinanceAPI.getStatus();
+              const bin = binRes.data;
+              if (bin?.totalUsd > 0) binanceCashRatio = bin.cashUsd / bin.totalUsd;
+            } catch { /* Binance indisponible - RC reste 100% "placé" comme avant */ }
+          }
+
+          return { id: comp.id, name: comp.name, liquidity: comp.liquidity || 'cash', revenue, expense, cash, rawCash, ownershipPct, capitalNet, gainsCR, txs, binanceCashRatio };
         })
       );
       setEntityStats(results);
@@ -2728,8 +2745,13 @@ function PortfolioGlobalPage() {
 
   const cashEntities = entityStats.filter(e => e.liquidity === 'cash');
   const placeEntities = entityStats.filter(e => e.liquidity === 'placé');
-  const totalCash = cashEntities.reduce((s, e) => s + e.cash, 0);
-  const totalPlace = placeEntities.reduce((s, e) => s + e.cash, 0);
+  // Part de RC réellement en cash (stablecoins) selon le ratio live Binance - déplacée
+  // de "Capital Placé" vers "Cash dispo" dans les totaux uniquement (le tableau détaillé
+  // ci-dessous garde RC dans la section Placé avec sa valeur totale, note explicative).
+  const rcEntity = entityStats.find(e => e.id === 'abayili_invest_rc');
+  const rcCashPortion = rcEntity?.binanceCashRatio != null ? rcEntity.cash * rcEntity.binanceCashRatio : 0;
+  const totalCash = cashEntities.reduce((s, e) => s + e.cash, 0) + rcCashPortion;
+  const totalPlace = placeEntities.reduce((s, e) => s + e.cash, 0) - rcCashPortion;
   const donutData = entityStats.filter(e => e.cash > 0).map(e => ({ name: e.name, value: e.cash }));
 
   // --- Bilan Global / Rendement Global du fonds ---
@@ -2801,6 +2823,11 @@ function PortfolioGlobalPage() {
                   {e.ownershipPct < 1 && (
                     <span className="block text-[10px] text-neutral-500 mt-0.5">
                       {(e.ownershipPct * 100).toFixed(0)}% détenu — {e.rawCash.toLocaleString('fr-FR')} FCFA à 100%
+                    </span>
+                  )}
+                  {e.binanceCashRatio != null && (
+                    <span className="block text-[10px] text-neutral-500 mt-0.5">
+                      dont {Math.round(e.cash * e.binanceCashRatio).toLocaleString('fr-FR')} FCFA en cash (USDT live) — {Math.round(e.cash * (1 - e.binanceCashRatio)).toLocaleString('fr-FR')} FCFA en cryptos
                     </span>
                   )}
                 </td>
