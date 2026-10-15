@@ -840,10 +840,25 @@ function LiveWalletBalancesWidget() {
             <p className="text-xs text-neutral-500 flex items-center gap-2"><Icons.Loader size={13} />Chargement...</p>
           ) : (
             <>
-              <p className="text-sm text-white mb-1.5">{Math.round(binance.totalFcfa).toLocaleString('fr-FR')} FCFA <span className="text-neutral-500">({binance.totalUsd.toFixed(2)} $)</span></p>
+              <p className="text-sm text-white mb-2">{Math.round(binance.totalFcfa).toLocaleString('fr-FR')} FCFA <span className="text-neutral-500">({binance.totalUsd.toFixed(2)} $)</span></p>
+              {/* Cash (stablecoins) vs placement (reste) - un stablecoin n'a pas d'exposition
+                  de marché, c'est de la liquidité ; le reste varie, c'est un placement. */}
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="bg-neutral-800/30 rounded-lg px-2.5 py-1.5">
+                  <p className="text-[9px] text-neutral-500 uppercase tracking-wider">Cash (stablecoins)</p>
+                  <p className="text-xs text-white">{Math.round(binance.cashFcfa ?? 0).toLocaleString('fr-FR')} FCFA</p>
+                </div>
+                <div className="bg-neutral-800/30 rounded-lg px-2.5 py-1.5">
+                  <p className="text-[9px] text-neutral-500 uppercase tracking-wider">Placé (cryptos)</p>
+                  <p className="text-xs text-white">{Math.round(binance.placementFcfa ?? 0).toLocaleString('fr-FR')} FCFA</p>
+                </div>
+              </div>
               <div className="space-y-0.5">
                 {binance.holdings.slice(0, 5).map(h => (
-                  <p key={h.asset} className="text-[11px] text-neutral-500">{h.asset} : {h.amount.toFixed(6)} (≈{h.usdValue.toFixed(2)} $)</p>
+                  <p key={h.asset} className="text-[11px] text-neutral-500">
+                    {h.asset} : {h.amount.toFixed(6)} (≈{h.usdValue.toFixed(2)} $)
+                    <span className={h.isStablecoin ? 'text-neutral-600' : 'text-amber-500/70'}> · {h.isStablecoin ? 'cash' : 'placement'}</span>
+                  </p>
                 ))}
               </div>
             </>
