@@ -2750,7 +2750,13 @@ function PortfolioGlobalPage() {
   // ci-dessous garde RC dans la section Placé avec sa valeur totale, note explicative).
   const rcEntity = entityStats.find(e => e.id === 'abayili_invest_rc');
   const rcCashPortion = rcEntity?.binanceCashRatio != null ? rcEntity.cash * rcEntity.binanceCashRatio : 0;
-  const totalCash = cashEntities.reduce((s, e) => s + e.cash, 0) + rcCashPortion;
+  // totalCashReel : exactement ce que CashReconciliationWidget doit comparer à la feuille
+  // Excel (comptes Wave/Djamo/espèces réellement mobilisables), SANS la part USDT de RC -
+  // la feuille Excel n'a jamais inclus Binance, capital placé volontairement exclu de ce
+  // contrôle (voir le sous-titre du widget). totalCash, lui, est la vue "Cash dispo"
+  // élargie du bilan consolidé (summary + tableau ci-dessous), qui INCLUT cette part live.
+  const totalCashReel = cashEntities.reduce((s, e) => s + e.cash, 0);
+  const totalCash = totalCashReel + rcCashPortion;
   const totalPlace = placeEntities.reduce((s, e) => s + e.cash, 0) - rcCashPortion;
   const donutData = entityStats.filter(e => e.cash > 0).map(e => ({ name: e.name, value: e.cash }));
 
@@ -2848,7 +2854,7 @@ function PortfolioGlobalPage() {
         <p className="text-neutral-500 text-sm mt-1">Bilan consolidé du fonds Abayili Investissement — toutes sociétés et départements confondus</p>
       </div>
 
-      <CashReconciliationWidget totalCashApp={totalCash} />
+      <CashReconciliationWidget totalCashApp={totalCashReel} />
 
       {/* Bilan Global / Rendement Global du fonds - vue "coup d'œil" qui
           répond à "est-ce que le fonds, dans son ensemble, performe ?",
@@ -2886,7 +2892,7 @@ function PortfolioGlobalPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-        <MetricCard label="Cash Disponible (Abayili Invest, Consulting, AI for Afrika, Gourmandises)" value={`${totalCash >= 0 ? '+' : ''}${totalCash.toLocaleString('fr-FR')} FCFA`} positive={totalCash >= 0} icon="PiggyBank" />
+        <MetricCard label="Cash Disponible (comptes + part stable de RC en USDT live)" value={`${totalCash >= 0 ? '+' : ''}${totalCash.toLocaleString('fr-FR')} FCFA`} positive={totalCash >= 0} icon="PiggyBank" />
         <MetricCard label="Capital Placé (Cryptos, FCP, RTA, RPP — immobilisé, pas mobilisable)" value={`${totalPlace >= 0 ? '+' : ''}${totalPlace.toLocaleString('fr-FR')} FCFA`} positive={totalPlace >= 0} icon="TrendingUp" />
       </div>
 
@@ -2906,8 +2912,15 @@ function PortfolioGlobalPage() {
         </div>
       </div>
 
+      {/* La part cash de RC (USDT live) n'est pas une entité séparée - ajoutée comme ligne
+          à part dans le tableau Cash Disponible pour que les lignes affichées totalisent
+          bien le total du bandeau ci-dessus (sinon RC "disparaîtrait" du mauvais côté). */}
       <div className="space-y-6">
-        {renderSection('Cash Disponible', 'PiggyBank', cashEntities, totalCash, 'text-emerald-400')}
+        {renderSection('Cash Disponible', 'PiggyBank',
+          rcCashPortion > 0
+            ? [...cashEntities, { id: 'rc_cash_portion', name: 'Réseau Cryptos — Actifs (part cash, USDT live)', cash: rcCashPortion, rawCash: rcCashPortion, ownershipPct: 1 }]
+            : cashEntities,
+          totalCash, 'text-emerald-400')}
         {renderSection('Capital Placé', 'TrendingUp', placeEntities, totalPlace, 'text-amber-400')}
       </div>
     </div>
