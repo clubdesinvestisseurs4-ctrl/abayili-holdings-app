@@ -2715,24 +2715,25 @@ function PortfolioGlobalPage() {
           const rawCash = cash;
           cash = cash * ownershipPct;
 
-          // RC Actifs (2026-10-15) : une partie de sa valeur dort en stablecoins sur
-          // Binance (liquidité réelle, pas un pari sur un cours) - le ratio live
-          // cash/total de /api/binance/status détermine quelle fraction de la valeur
-          // DÉJÀ calculée par le grand livre (ci-dessus, donc cohérente avec le Bilan
-          // Global) compte comme "Cash dispo" plutôt que "Capital Placé" ci-dessous.
-          // Binance ne devient jamais la source du MONTANT total de RC, seulement de
-          // cette proportion - sinon un écart entre grand livre et solde live (frais
-          // non enregistrés, virement en cours...) romprait la réconciliation du bilan.
-          let binanceCashRatio = null;
+          // RC Actifs (2026-10-15, révisé 2026-10-16) : une partie de sa valeur dort en
+          // stablecoins sur Binance (liquidité réelle, pas un pari sur un cours). Montant
+          // EXACT pris directement de /api/binance/status (cashFcfa), pas une part du grand
+          // livre de RC - un ratio appliqué au grand livre avait fait remonter PRESQUE TOUTE
+          // la valeur de RC en "cash" dès que le compte était ~100% en USDT (le grand livre
+          // ne colle jamais exactement au solde live - frais, virements en cours...), alors
+          // que seul le vrai montant en USDT doit compter. Contrepartie acceptée : la ligne
+          // RC du tableau Cash Disponible peut légèrement diverger du total de RC affiché
+          // sur sa propre page, à hauteur de ce même écart grand livre/live (généralement
+          // faible) - largement préférable à compter plus que ce qui existe réellement.
+          let binanceCashFcfa = null;
           if (comp.id === 'abayili_invest_rc') {
             try {
               const binRes = await BinanceAPI.getStatus();
-              const bin = binRes.data;
-              if (bin?.totalUsd > 0) binanceCashRatio = bin.cashUsd / bin.totalUsd;
+              binanceCashFcfa = binRes.data?.cashFcfa ?? null;
             } catch { /* Binance indisponible - RC reste 100% "placé" comme avant */ }
           }
 
-          return { id: comp.id, name: comp.name, liquidity: comp.liquidity || 'cash', revenue, expense, cash, rawCash, ownershipPct, capitalNet, gainsCR, txs, binanceCashRatio };
+          return { id: comp.id, name: comp.name, liquidity: comp.liquidity || 'cash', revenue, expense, cash, rawCash, ownershipPct, capitalNet, gainsCR, txs, binanceCashFcfa };
         })
       );
       setEntityStats(results);
@@ -2749,7 +2750,7 @@ function PortfolioGlobalPage() {
   // de "Capital Placé" vers "Cash dispo" dans les totaux uniquement (le tableau détaillé
   // ci-dessous garde RC dans la section Placé avec sa valeur totale, note explicative).
   const rcEntity = entityStats.find(e => e.id === 'abayili_invest_rc');
-  const rcCashPortion = rcEntity?.binanceCashRatio != null ? rcEntity.cash * rcEntity.binanceCashRatio : 0;
+  const rcCashPortion = rcEntity?.binanceCashFcfa ?? 0;
   // totalCashReel : exactement ce que CashReconciliationWidget doit comparer à la feuille
   // Excel (comptes Wave/Djamo/espèces réellement mobilisables), SANS la part USDT de RC -
   // la feuille Excel n'a jamais inclus Binance, capital placé volontairement exclu de ce
@@ -2831,9 +2832,9 @@ function PortfolioGlobalPage() {
                       {(e.ownershipPct * 100).toFixed(0)}% détenu — {e.rawCash.toLocaleString('fr-FR')} FCFA à 100%
                     </span>
                   )}
-                  {e.binanceCashRatio != null && (
+                  {e.binanceCashFcfa != null && (
                     <span className="block text-[10px] text-neutral-500 mt-0.5">
-                      dont {Math.round(e.cash * e.binanceCashRatio).toLocaleString('fr-FR')} FCFA en cash (USDT live) — {Math.round(e.cash * (1 - e.binanceCashRatio)).toLocaleString('fr-FR')} FCFA en cryptos
+                      dont {Math.round(e.binanceCashFcfa).toLocaleString('fr-FR')} FCFA en cash (USDT live) — reste en cryptos/écart grand livre
                     </span>
                   )}
                 </td>
